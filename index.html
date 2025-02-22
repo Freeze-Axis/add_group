@@ -409,7 +409,7 @@
             { headers: { Authorization: token } }
           );
           updateLog(`チャネルID ${channelId} の処理完了`);
-          await sleep(1000);
+          await sleep(0);
         }
         updateLog("全グループへの追加処理完了！");
       }
@@ -523,7 +523,7 @@
         } catch (error) {
           updateLog(`グループ作成エラー: ${error.message}`, true);
         }
-        await sleep(1000);
+        await sleep(0);
       }
       updateLog("10件作成完了。10分間待機します...");
       await sleep(10 * 60 * 1000);

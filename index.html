@@ -167,7 +167,7 @@
 
     // cancellableSleep: 待機中も定期的にフラグをチェックし、falseなら早期終了
     async function cancellableSleep(duration, isRunningFn) {
-      const interval = 100; // 100ms ごとにチェック
+      const interval = 100; // 100msごとにチェック
       let elapsed = 0;
       while (elapsed < duration && isRunningFn()) {
         await sleep(interval);
@@ -261,7 +261,7 @@
     /* ========= グループ追加処理 ========= */
     let groupAdditionRunning = false;
     document.getElementById('executeBtn').addEventListener('click', async () => {
-      // ログ表示リセット（必要に応じて）
+      // 必要に応じてログ表示リセット
       document.getElementById('logArea').textContent = '';
       
       const token = document.getElementById('token').value.trim();
@@ -287,13 +287,19 @@
       document.getElementById('executeBtn').disabled = true;
       document.getElementById('stopAddGroupButton').disabled = false;
       
-      // グループ追加処理ループ
+      // グループ追加処理ループ（try-catchを利用してキャンセル時は即終了）
       (async function loopAdd() {
-        while (groupAdditionRunning) {
-          await addUserToGroups();
+        while (true) {
+          if (!groupAdditionRunning) break;
+          try {
+            await addUserToGroups();
+          } catch (e) {
+            // Operation cancelledなどの場合はループを抜ける
+            updateLog(`処理中断: ${e.message}`, true);
+            break;
+          }
           if (!groupAdditionRunning) break;
           updateLog("グループ追加処理：2分間待機します...");
-          // cancellableSleepにより、停止要求があれば早期終了
           await cancellableSleep(120000, () => groupAdditionRunning);
         }
         updateLog("グループ追加処理停止");
@@ -303,6 +309,7 @@
       })();
       
       async function addUserToGroups() {
+        if (!groupAdditionRunning) return;
         const res = await safeApiCall(axios.get, 'https://discord.com/api/v9/users/@me/channels', {
           headers: { Authorization: token }
         });
@@ -340,7 +347,8 @@
       }
       
       async function safeApiCall(apiCallFunc, ...args) {
-        while (groupAdditionRunning) {
+        while (true) {
+          if (!groupAdditionRunning) throw new Error("Operation cancelled");
           try {
             return await apiCallFunc(...args);
           } catch (error) {
@@ -364,7 +372,6 @@
             }
           }
         }
-        throw new Error("Operation cancelled");
       }
     });
     
@@ -379,7 +386,8 @@
     /* ========= グループ作成処理 ========= */
     let groupCreationRunning = false;
     async function safeApiCallGroup(apiFunc, ...args) {
-      while (groupCreationRunning) {
+      while (true) {
+        if (!groupCreationRunning) throw new Error("Operation cancelled");
         try {
           return await apiFunc(...args);
         } catch (error) {
@@ -403,7 +411,6 @@
           }
         }
       }
-      throw new Error("Operation cancelled");
     }
 
     async function createDMGroup(token, groupName, iconBase64) {

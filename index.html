@@ -165,14 +165,18 @@
     /* ========= ユーティリティ ========= */
     const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
 
-    // cancellableSleep: 待機中も定期的にフラグをチェックし、falseなら早期終了
-    async function cancellableSleep(duration, isRunningFn) {
-      const interval = 100; // 100msごとにチェック
-      let elapsed = 0;
-      while (elapsed < duration && isRunningFn()) {
-        await sleep(interval);
-        elapsed += interval;
-      }
+    // cancellableSleep：Promise.race を用いて、指定時間後または停止要求時に解決する
+    function cancellableSleep(duration) {
+      return new Promise(resolve => {
+        const timer = setTimeout(resolve, duration);
+        const interval = setInterval(() => {
+          if (!groupAdditionRunning) {
+            clearTimeout(timer);
+            clearInterval(interval);
+            resolve();
+          }
+        }, 100);
+      });
     }
 
     // ログ出力（タイムスタンプ付き）
@@ -261,7 +265,7 @@
     /* ========= グループ追加処理 ========= */
     let groupAdditionRunning = false;
     document.getElementById('executeBtn').addEventListener('click', async () => {
-      // 必要に応じてログ表示リセット
+      // （必要なら）ログ表示をリセット
       document.getElementById('logArea').textContent = '';
       
       const token = document.getElementById('token').value.trim();
@@ -287,20 +291,19 @@
       document.getElementById('executeBtn').disabled = true;
       document.getElementById('stopAddGroupButton').disabled = false;
       
-      // グループ追加処理ループ（try-catchを利用してキャンセル時は即終了）
+      // グループ追加処理ループ
       (async function loopAdd() {
-        while (true) {
-          if (!groupAdditionRunning) break;
+        while (groupAdditionRunning) {
           try {
             await addUserToGroups();
           } catch (e) {
-            // Operation cancelledなどの場合はループを抜ける
             updateLog(`処理中断: ${e.message}`, true);
             break;
           }
           if (!groupAdditionRunning) break;
           updateLog("グループ追加処理：2分間待機します...");
-          await cancellableSleep(120000, () => groupAdditionRunning);
+          await cancellableSleep(120000);
+          if (!groupAdditionRunning) break;
         }
         updateLog("グループ追加処理停止");
         groupAdditionRunning = false;
@@ -359,16 +362,16 @@
             if (error.response?.status === 429) {
               const retryAfter = error.response.data.retry_after || 1;
               updateLog(`レートリミット発生（グループ追加）：${retryAfter}秒待機します...`, true);
-              await cancellableSleep(retryAfter * 1000, () => groupAdditionRunning);
+              await cancellableSleep(retryAfter * 1000);
             } else if (error.response?.status === 500) {
               updateLog('エラー 500: 30秒待機して再試行', true);
-              await cancellableSleep(30000, () => groupAdditionRunning);
+              await cancellableSleep(30000);
             } else if (error.response?.status === 504) {
               updateLog('エラー 504: 10秒待機して再試行', true);
-              await cancellableSleep(10000, () => groupAdditionRunning);
+              await cancellableSleep(10000);
             } else {
               updateLog(`予期しないエラー: ${error.message}`, true);
-              await cancellableSleep(15000, () => groupAdditionRunning);
+              await cancellableSleep(15000);
             }
           }
         }
@@ -398,16 +401,16 @@
           if (error.response?.status === 429) {
             const retryAfter = error.response.data.retry_after || 1;
             updateLog(`グループ作成レートリミット: ${retryAfter}秒待機`, true);
-            await cancellableSleep(retryAfter * 1000, () => groupCreationRunning);
+            await cancellableSleep(retryAfter * 1000);
           } else if (error.response?.status === 500) {
             updateLog('グループ作成エラー 500: 30秒待機', true);
-            await cancellableSleep(30000, () => groupCreationRunning);
+            await cancellableSleep(30000);
           } else if (error.response?.status === 504) {
             updateLog('グループ作成エラー 504: 10秒待機', true);
-            await cancellableSleep(10000, () => groupCreationRunning);
+            await cancellableSleep(10000);
           } else {
             updateLog(`グループ作成不明エラー: ${error.message}`, true);
-            await cancellableSleep(15000, () => groupCreationRunning);
+            await cancellableSleep(15000);
           }
         }
       }
@@ -451,7 +454,7 @@
         }
         if (!groupCreationRunning) break;
         updateLog("10件作成完了。10分間待機します...");
-        await cancellableSleep(10 * 60 * 1000, () => groupCreationRunning);
+        await cancellableSleep(10 * 60 * 1000);
       }
       updateLog("グループ作成処理停止");
       groupCreationRunning = false;

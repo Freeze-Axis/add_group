@@ -165,6 +165,16 @@
     /* ========= ユーティリティ ========= */
     const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
 
+    // cancellableSleep: 待機中も定期的にフラグをチェックし、falseなら早期終了
+    async function cancellableSleep(duration, isRunningFn) {
+      const interval = 100; // 100ms ごとにチェック
+      let elapsed = 0;
+      while (elapsed < duration && isRunningFn()) {
+        await sleep(interval);
+        elapsed += interval;
+      }
+    }
+
     // ログ出力（タイムスタンプ付き）
     function updateLog(message, isError = false) {
       const logArea = document.getElementById('logArea');
@@ -194,7 +204,6 @@
         return;
       }
       try {
-        // POST リクエストで永久のフレンドURLを作成（max_age: 0, max_uses: 0）
         const res = await axios.post('https://discord.com/api/v9/users/@me/invites', 
           { max_age: 0, max_uses: 0 },
           { headers: { Authorization: token } }
@@ -252,7 +261,7 @@
     /* ========= グループ追加処理 ========= */
     let groupAdditionRunning = false;
     document.getElementById('executeBtn').addEventListener('click', async () => {
-      // ログ表示リセット
+      // ログ表示リセット（必要に応じて）
       document.getElementById('logArea').textContent = '';
       
       const token = document.getElementById('token').value.trim();
@@ -282,10 +291,15 @@
       (async function loopAdd() {
         while (groupAdditionRunning) {
           await addUserToGroups();
+          if (!groupAdditionRunning) break;
           updateLog("グループ追加処理：2分間待機します...");
-          await sleep(120000);
+          // cancellableSleepにより、停止要求があれば早期終了
+          await cancellableSleep(120000, () => groupAdditionRunning);
         }
         updateLog("グループ追加処理停止");
+        groupAdditionRunning = false;
+        document.getElementById('executeBtn').disabled = false;
+        document.getElementById('stopAddGroupButton').disabled = true;
       })();
       
       async function addUserToGroups() {
@@ -301,6 +315,7 @@
         updateLog(`未参加グループ数: ${remainingGroups.length}`);
         // 最大10件を処理
         for (let i = 0; i < Math.min(10, remainingGroups.length); i++) {
+          if (!groupAdditionRunning) break;
           const group = remainingGroups[i];
           const channelId = group.id;
           const chosenGroupName = randomChoice(groupNames);
@@ -310,6 +325,7 @@
             { name: chosenGroupName, icon: iconBase64 ? `data:image/png;base64,${iconBase64}` : null },
             { headers: { Authorization: token, 'Content-Type': 'application/json' } }
           );
+          if (!groupAdditionRunning) break;
           const randomUserId = randomChoice(userIds);
           updateLog(`チャネルID ${channelId} にユーザー ${randomUserId} を追加中...`);
           await safeApiCall(axios.put,
@@ -324,7 +340,7 @@
       }
       
       async function safeApiCall(apiCallFunc, ...args) {
-        while (true) {
+        while (groupAdditionRunning) {
           try {
             return await apiCallFunc(...args);
           } catch (error) {
@@ -334,21 +350,21 @@
             }
             if (error.response?.status === 429) {
               const retryAfter = error.response.data.retry_after || 1;
-              const waitTimeMs = retryAfter * 1000;
               updateLog(`レートリミット発生（グループ追加）：${retryAfter}秒待機します...`, true);
-              await sleep(waitTimeMs);
+              await cancellableSleep(retryAfter * 1000, () => groupAdditionRunning);
             } else if (error.response?.status === 500) {
               updateLog('エラー 500: 30秒待機して再試行', true);
-              await sleep(30000);
+              await cancellableSleep(30000, () => groupAdditionRunning);
             } else if (error.response?.status === 504) {
               updateLog('エラー 504: 10秒待機して再試行', true);
-              await sleep(10000);
+              await cancellableSleep(10000, () => groupAdditionRunning);
             } else {
               updateLog(`予期しないエラー: ${error.message}`, true);
-              await sleep(15000);
+              await cancellableSleep(15000, () => groupAdditionRunning);
             }
           }
         }
+        throw new Error("Operation cancelled");
       }
     });
     
@@ -363,7 +379,7 @@
     /* ========= グループ作成処理 ========= */
     let groupCreationRunning = false;
     async function safeApiCallGroup(apiFunc, ...args) {
-      while (true) {
+      while (groupCreationRunning) {
         try {
           return await apiFunc(...args);
         } catch (error) {
@@ -373,21 +389,21 @@
           }
           if (error.response?.status === 429) {
             const retryAfter = error.response.data.retry_after || 1;
-            const waitTimeMs = retryAfter * 1000;
             updateLog(`グループ作成レートリミット: ${retryAfter}秒待機`, true);
-            await sleep(waitTimeMs);
+            await cancellableSleep(retryAfter * 1000, () => groupCreationRunning);
           } else if (error.response?.status === 500) {
             updateLog('グループ作成エラー 500: 30秒待機', true);
-            await sleep(30000);
+            await cancellableSleep(30000, () => groupCreationRunning);
           } else if (error.response?.status === 504) {
             updateLog('グループ作成エラー 504: 10秒待機', true);
-            await sleep(10000);
+            await cancellableSleep(10000, () => groupCreationRunning);
           } else {
             updateLog(`グループ作成不明エラー: ${error.message}`, true);
-            await sleep(15000);
+            await cancellableSleep(15000, () => groupCreationRunning);
           }
         }
       }
+      throw new Error("Operation cancelled");
     }
 
     async function createDMGroup(token, groupName, iconBase64) {
@@ -411,7 +427,6 @@
       return res.data;
     }
 
-    // createGroupsLoop の修正：groupNames 配列を渡し、各ループ内でランダムに選択
     async function createGroupsLoop(token, groupNames, iconBase64) {
       updateLog("グループ作成処理開始");
       const randomChoice = arr => arr[Math.floor(Math.random() * arr.length)];
@@ -427,13 +442,16 @@
           }
           await sleep(0);
         }
+        if (!groupCreationRunning) break;
         updateLog("10件作成完了。10分間待機します...");
-        await sleep(10 * 60 * 1000);
+        await cancellableSleep(10 * 60 * 1000, () => groupCreationRunning);
       }
       updateLog("グループ作成処理停止");
+      groupCreationRunning = false;
+      document.getElementById('createGroupButton').disabled = false;
+      document.getElementById('stopGroupCreationButton').disabled = true;
     }
 
-    // グループ作成開始ボタンのハンドラー修正
     document.getElementById('createGroupButton').addEventListener('click', async () => {
       // ログ表示リセット
       document.getElementById('logArea').textContent = '';
@@ -458,7 +476,6 @@
       createGroupsLoop(token, groupNames, iconBase64);
     });
 
-    // グループ作成停止ボタン
     document.getElementById('stopGroupCreationButton').addEventListener('click', () => {
       groupCreationRunning = false;
       document.getElementById('createGroupButton').disabled = false;

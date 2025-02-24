@@ -264,8 +264,7 @@
     /* ========= グループ追加処理 ========= */
     let groupAdditionRunning = false;
     document.getElementById('executeBtn').addEventListener('click', async () => {
-      // ログの初期化
-      document.getElementById('logArea').textContent = '';
+      // ログをクリアせず、以前のログを保持する
       
       if (!getToken()) {
         updateLog("Botトークンを入力してください。", true);
@@ -473,7 +472,7 @@
 
     // グループ作成開始ボタン
     document.getElementById('createGroupButton').addEventListener('click', async () => {
-      document.getElementById('logArea').textContent = '';
+      // ログをクリアせず、以前のログを保持する
       
       if (!getToken()) {
         updateLog("Botトークンを入力してください。", true);

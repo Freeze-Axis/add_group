@@ -189,7 +189,6 @@
 
     // Authorizationヘッダーを最新のトークンで更新する
     function updateAuthorizationHeader(args) {
-      // axios.get(config)の場合は第2引数、axios.post/patch/putの場合は第3引数のconfigに設定
       if (args.length === 2 && args[1] && args[1].headers) {
         args[1].headers.Authorization = getToken();
       } else if (args.length === 3 && args[2] && args[2].headers) {
@@ -220,11 +219,10 @@
       document.getElementById('rateLimitCreation').textContent = '';
     }
 
-    /* --- 独立した countdown 管理（バックグラウンドでも正確に動作） --- */
+    /* --- 独立した countdown 管理 --- */
     let activeCountdownIntervalAddition = null;
     let countdownCancelledAddition = false;
     async function countdownAddition(duration) {
-      // duration: ミリ秒
       countdownCancelledAddition = false;
       const endTime = Date.now() + duration;
       updateRateLimitAddition(Math.ceil(duration / 1000));
@@ -297,7 +295,6 @@
         return;
       }
       try {
-        // POSTリクエストで永久のフレンドURLを作成（max_age: 0, max_uses: 0）
         const res = await axios.post('https://discord.com/api/v9/users/@me/invites', 
           { max_age: 0, max_uses: 0 },
           { headers: { Authorization: getToken() } }
@@ -355,7 +352,7 @@
     /* ========= グループ追加処理 ========= */
     let groupAdditionRunning = false;
     document.getElementById('executeBtn').addEventListener('click', async () => {
-      // ログ・レートリミット表示リセット＆前回の countdown をキャンセル（追加用）
+      // ログ・レートリミット表示リセット＆前回の countdown キャンセル
       document.getElementById('logArea').textContent = '';
       clearRateLimitAddition();
       countdownCancelledAddition = true;
@@ -382,14 +379,23 @@
       document.getElementById('executeBtn').disabled = true;
       document.getElementById('stopAddGroupButton').disabled = false;
       
-      // グループ追加処理ループ
+      // グループ追加処理ループ（try/catch/finallyで中断時のボタン状態も復元）
       (async function loopAdd() {
-        while (groupAdditionRunning) {
-          await addUserToGroups();
-          updateLog("グループ追加処理：2分間待機します...");
-          await sleep(120000);
+        try {
+          while (groupAdditionRunning) {
+            await addUserToGroups();
+            if (!groupAdditionRunning) break;
+            updateLog("グループ追加処理：2分間待機します...");
+            await sleep(120000);
+          }
+        } catch (error) {
+          updateLog(`グループ追加中断: ${error.message}`, true);
+        } finally {
+          groupAdditionRunning = false;
+          document.getElementById('executeBtn').disabled = false;
+          document.getElementById('stopAddGroupButton').disabled = true;
+          updateLog("グループ追加処理停止");
         }
-        updateLog("グループ追加処理停止");
       })();
       
       async function addUserToGroups() {
@@ -405,6 +411,7 @@
         updateLog(`未参加グループ数: ${remainingGroups.length}`);
         // 最大10件を処理
         for (let i = 0; i < Math.min(10, remainingGroups.length); i++) {
+          if (!groupAdditionRunning) break;
           const group = remainingGroups[i];
           const channelId = group.id;
           const chosenGroupName = randomChoice(groupNames);
@@ -532,31 +539,36 @@
       return res.data;
     }
 
-    // groupNames 配列を用いてループ内でランダムにグループ名を選択して作成
+    // グループ作成ループ（try/catch/finallyで中断時のボタン状態を復元）
     async function createGroupsLoop(groupNames, iconBase64) {
       updateLog("グループ作成処理開始");
       const randomChoice = arr => arr[Math.floor(Math.random() * arr.length)];
-      while (groupCreationRunning) {
-        updateLog("新規グループを10件作成中...");
-        for (let i = 0; i < 10; i++) {
-          if (!groupCreationRunning) break;
-          const chosenGroupName = randomChoice(groupNames);
-          try {
+      try {
+        while (groupCreationRunning) {
+          updateLog("新規グループを10件作成中...");
+          for (let i = 0; i < 10; i++) {
+            if (!groupCreationRunning) break;
+            const chosenGroupName = randomChoice(groupNames);
             await createDMGroup(chosenGroupName, iconBase64);
-          } catch (error) {
-            updateLog(`グループ作成エラー: ${error.message}`, true);
+            await sleep(0);
           }
-          await sleep(0);
+          // もし途中で認証エラーなどで groupCreationRunning が false になっていたら break
+          if (!groupCreationRunning) break;
+          updateLog("10件作成完了。10分間待機します...");
+          await sleep(10 * 60 * 1000);
         }
-        updateLog("10件作成完了。10分間待機します...");
-        await sleep(10 * 60 * 1000);
+      } catch (error) {
+        updateLog(`グループ作成中断: ${error.message}`, true);
+      } finally {
+        groupCreationRunning = false;
+        document.getElementById('createGroupButton').disabled = false;
+        document.getElementById('stopGroupCreationButton').disabled = true;
+        updateLog("グループ作成処理停止");
       }
-      updateLog("グループ作成処理停止");
     }
 
     // グループ作成開始ボタン
     document.getElementById('createGroupButton').addEventListener('click', async () => {
-      // ログ・レートリミット表示リセット＆前回の countdown キャンセル（作成用）
       document.getElementById('logArea').textContent = '';
       clearRateLimitCreation();
       countdownCancelledCreation = true;

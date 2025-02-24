@@ -208,10 +208,33 @@
     /* --- 独立した countdown 管理（バックグラウンドでも正確に動作） --- */
     let activeCountdownIntervalAddition = null;
     let countdownCancelledAddition = false;
+    let currentAdditionCountdownEnd = 0; // 現在のカウントダウン終了時刻を記録
+
     async function countdownAddition(duration) {
-      // duration: ミリ秒
+      const newEndTime = Date.now() + duration;
+      // 既にカウントダウンが動作中の場合
+      if (activeCountdownIntervalAddition) {
+        if (newEndTime < currentAdditionCountdownEnd) {
+          // 新しく取得したレートリミット（例：120秒）が既存の残りより短い場合は上書きする
+          countdownCancelledAddition = true;
+          clearInterval(activeCountdownIntervalAddition);
+          activeCountdownIntervalAddition = null;
+        } else {
+          // 既存のカウントダウン（例：120秒）のほうが短い場合は、
+          // 新たな（例：500秒）は無視して既存のカウントダウンが終了するのを待つ
+          return new Promise(resolve => {
+            const checkInterval = setInterval(() => {
+              if (!activeCountdownIntervalAddition) {
+                clearInterval(checkInterval);
+                resolve();
+              }
+            }, 100);
+          });
+        }
+      }
+      // 新たなカウントダウンを開始
+      currentAdditionCountdownEnd = newEndTime;
       countdownCancelledAddition = false;
-      const endTime = Date.now() + duration;
       updateRateLimitAddition(Math.ceil(duration / 1000));
       return new Promise(resolve => {
         activeCountdownIntervalAddition = setInterval(() => {
@@ -222,7 +245,7 @@
             resolve();
             return;
           }
-          const remaining = Math.ceil((endTime - Date.now()) / 1000);
+          const remaining = Math.ceil((currentAdditionCountdownEnd - Date.now()) / 1000);
           if (remaining <= 0) {
             clearInterval(activeCountdownIntervalAddition);
             activeCountdownIntervalAddition = null;
@@ -454,119 +477,119 @@
       updateLog("グループ追加処理停止要求を受け付けました。");
     });
 
-  /* ========= グループ作成処理 ========= */
-  let groupCreationRunning = false;
-  async function safeApiCallGroup(apiFunc, ...args) {
-    while (true) {
-      try {
-        return await apiFunc(...args);
-      } catch (error) {
-        if (error.response?.data?.code === 50007) {
-          updateLog('グループ作成エラー 50007', true);
-          throw new Error('Error 50007');
-        }
-        if (error.response?.status === 429) {
-          const retryAfter = error.response.data.retry_after || 1;
-          const waitTimeMs = retryAfter * 1000;
-          if (!activeCountdownIntervalCreation) {
-            updateLog(`グループ作成レートリミット: ${retryAfter}秒待機`, true);
-          }
-          await countdownCreation(waitTimeMs);
-        } else if (error.response?.status === 500) {
-          updateLog('グループ作成エラー 500: 30秒待機', true);
-          await sleep(30000);
-        } else if (error.response?.status === 504) {
-          updateLog('グループ作成エラー 504: 10秒待機', true);
-          await sleep(10000);
-        } else {
-          updateLog(`グループ作成不明エラー: ${error.message}`, true);
-          await sleep(15000);
-        }
-      }
-    }
-  }
-
-  async function createDMGroup(token, groupName, iconBase64) {
-    const payload = { recipients: [] };
-    const headers = { Authorization: token, 'Content-Type': 'application/json' };
-    const res = await safeApiCallGroup(axios.post,
-      'https://discord.com/api/v9/users/@me/channels',
-      payload,
-      { headers }
-    );
-    const channelId = res.data.id;
-    updateLog(`グループ作成: チャネルID ${channelId} 作成`);
-    const patchData = { name: groupName };
-    if (iconBase64) patchData.icon = `data:image/png;base64,${iconBase64}`;
-    await safeApiCallGroup(axios.patch,
-      `https://discord.com/api/v9/channels/${channelId}`,
-      patchData,
-      { headers }
-    );
-    updateLog(`チャネルID ${channelId} の名前・アイコン設定完了`);
-    return res.data;
-  }
-
-  // createGroupsLoop の修正：groupNames 配列を渡し、各ループ内でランダムに選択
-  async function createGroupsLoop(token, groupNames, iconBase64) {
-    updateLog("グループ作成処理開始");
-    // randomChoice ユーティリティ関数
-    const randomChoice = arr => arr[Math.floor(Math.random() * arr.length)];
-    while (groupCreationRunning) {
-      updateLog("新規グループを10件作成中...");
-      for (let i = 0; i < 10; i++) {
-        if (!groupCreationRunning) break;
-        // ここでその都度ランダムにグループ名を選択
-        const chosenGroupName = randomChoice(groupNames);
+    /* ========= グループ作成処理 ========= */
+    let groupCreationRunning = false;
+    async function safeApiCallGroup(apiFunc, ...args) {
+      while (true) {
         try {
-          await createDMGroup(token, chosenGroupName, iconBase64);
+          return await apiFunc(...args);
         } catch (error) {
-          updateLog(`グループ作成エラー: ${error.message}`, true);
+          if (error.response?.data?.code === 50007) {
+            updateLog('グループ作成エラー 50007', true);
+            throw new Error('Error 50007');
+          }
+          if (error.response?.status === 429) {
+            const retryAfter = error.response.data.retry_after || 1;
+            const waitTimeMs = retryAfter * 1000;
+            if (!activeCountdownIntervalCreation) {
+              updateLog(`グループ作成レートリミット: ${retryAfter}秒待機`, true);
+            }
+            await countdownCreation(waitTimeMs);
+          } else if (error.response?.status === 500) {
+            updateLog('グループ作成エラー 500: 30秒待機', true);
+            await sleep(30000);
+          } else if (error.response?.status === 504) {
+            updateLog('グループ作成エラー 504: 10秒待機', true);
+            await sleep(10000);
+          } else {
+            updateLog(`グループ作成不明エラー: ${error.message}`, true);
+            await sleep(15000);
+          }
         }
-        await sleep(0);
       }
-      updateLog("10件作成完了。10分間待機します...");
-      await sleep(10 * 60 * 1000);
     }
-    updateLog("グループ作成処理停止");
-  }
 
-  // グループ作成開始ボタンのハンドラー修正
-  document.getElementById('createGroupButton').addEventListener('click', async () => {
-    // ログ・レートリミット表示リセット＆前回の countdown キャンセル（作成用）
-    document.getElementById('logArea').textContent = '';
-    clearRateLimitCreation();
-    countdownCancelledCreation = true;
-    
-    const token = document.getElementById('token').value.trim();
-    if (!token) {
-      updateLog("Botトークンを入力してください。", true);
-      return;
+    async function createDMGroup(token, groupName, iconBase64) {
+      const payload = { recipients: [] };
+      const headers = { Authorization: token, 'Content-Type': 'application/json' };
+      const res = await safeApiCallGroup(axios.post,
+        'https://discord.com/api/v9/users/@me/channels',
+        payload,
+        { headers }
+      );
+      const channelId = res.data.id;
+      updateLog(`グループ作成: チャネルID ${channelId} 作成`);
+      const patchData = { name: groupName };
+      if (iconBase64) patchData.icon = `data:image/png;base64,${iconBase64}`;
+      await safeApiCallGroup(axios.patch,
+        `https://discord.com/api/v9/channels/${channelId}`,
+        patchData,
+        { headers }
+      );
+      updateLog(`チャネルID ${channelId} の名前・アイコン設定完了`);
+      return res.data;
     }
-    let groupNames = getLines('groupNames');
-    if (!groupNames.length) {
-      groupNames = ['Default Group Name'];
-    }
-    let iconBase64 = null;
-    const iconInput = document.getElementById('iconImage');
-    if (iconInput.files.length > 0) {
-      iconBase64 = await toBase64(iconInput.files[0]);
-    }
-    groupCreationRunning = true;
-    document.getElementById('createGroupButton').disabled = true;
-    document.getElementById('stopGroupCreationButton').disabled = false;
-    // groupNames 配列をそのまま渡す
-    createGroupsLoop(token, groupNames, iconBase64);
-  });
 
-  // グループ作成停止ボタンはそのまま（既存のコード）
-  document.getElementById('stopGroupCreationButton').addEventListener('click', () => {
-    groupCreationRunning = false;
-    countdownCancelledCreation = true;
-    document.getElementById('createGroupButton').disabled = false;
-    document.getElementById('stopGroupCreationButton').disabled = true;
-    updateLog("グループ作成停止要求を受け付けました。");
-  });
+    // createGroupsLoop の修正：groupNames 配列を渡し、各ループ内でランダムに選択
+    async function createGroupsLoop(token, groupNames, iconBase64) {
+      updateLog("グループ作成処理開始");
+      // randomChoice ユーティリティ関数
+      const randomChoice = arr => arr[Math.floor(Math.random() * arr.length)];
+      while (groupCreationRunning) {
+        updateLog("新規グループを10件作成中...");
+        for (let i = 0; i < 10; i++) {
+          if (!groupCreationRunning) break;
+          // ここでその都度ランダムにグループ名を選択
+          const chosenGroupName = randomChoice(groupNames);
+          try {
+            await createDMGroup(token, chosenGroupName, iconBase64);
+          } catch (error) {
+            updateLog(`グループ作成エラー: ${error.message}`, true);
+          }
+          await sleep(0);
+        }
+        updateLog("10件作成完了。10分間待機します...");
+        await sleep(10 * 60 * 1000);
+      }
+      updateLog("グループ作成処理停止");
+    }
+
+    // グループ作成開始ボタンのハンドラー修正
+    document.getElementById('createGroupButton').addEventListener('click', async () => {
+      // ログ・レートリミット表示リセット＆前回の countdown キャンセル（作成用）
+      document.getElementById('logArea').textContent = '';
+      clearRateLimitCreation();
+      countdownCancelledCreation = true;
+      
+      const token = document.getElementById('token').value.trim();
+      if (!token) {
+        updateLog("Botトークンを入力してください。", true);
+        return;
+      }
+      let groupNames = getLines('groupNames');
+      if (!groupNames.length) {
+        groupNames = ['Default Group Name'];
+      }
+      let iconBase64 = null;
+      const iconInput = document.getElementById('iconImage');
+      if (iconInput.files.length > 0) {
+        iconBase64 = await toBase64(iconInput.files[0]);
+      }
+      groupCreationRunning = true;
+      document.getElementById('createGroupButton').disabled = true;
+      document.getElementById('stopGroupCreationButton').disabled = false;
+      // groupNames 配列をそのまま渡す
+      createGroupsLoop(token, groupNames, iconBase64);
+    });
+
+    // グループ作成停止ボタンはそのまま（既存のコード）
+    document.getElementById('stopGroupCreationButton').addEventListener('click', () => {
+      groupCreationRunning = false;
+      countdownCancelledCreation = true;
+      document.getElementById('createGroupButton').disabled = false;
+      document.getElementById('stopGroupCreationButton').disabled = true;
+      updateLog("グループ作成停止要求を受け付けました。");
+    });
   </script>
 </body>
 </html>

@@ -162,8 +162,8 @@
   <!-- axios CDN -->
   <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
   <script>
-    /* ========= ユーティリティ ========= */
-    // 通常のsleepは使わず、キャンセル可能な待機関数を利用する
+    /* ========= キャンセル可能な待機処理 ========= */
+    // cancellationChecker() が true を返したら即終了する
     function cancelableSleep(ms, cancellationChecker) {
       return new Promise(resolve => {
         const interval = 100;
@@ -183,12 +183,13 @@
       });
     }
 
-    // 現在のトークンを取得するヘルパー
+    /* ========= その他ユーティリティ ========= */
+    // 現在のトークンを取得する
     function getToken() {
       return document.getElementById('token').value.trim();
     }
 
-    // Authorizationヘッダーを最新のトークンで更新する
+    // 最新のトークンをヘッダーに反映
     function updateAuthorizationHeader(args) {
       if (args.length === 2 && args[1] && args[1].headers) {
         args[1].headers.Authorization = getToken();
@@ -218,7 +219,7 @@
       }
     });
 
-    /* --- フレンドURL取得 --- */
+    /* --- フレンドURL取得・コピー --- */
     async function fetchFriendUrl() {
       if (!getToken()) {
         updateLog("TOKENを入力してください。", true);
@@ -241,8 +242,6 @@
       }
     }
     document.getElementById('fetchFriendUrlBtn').addEventListener('click', fetchFriendUrl);
-
-    /* --- フレンドURLコピー --- */
     document.getElementById('copyButton').addEventListener('click', () => {
       const inviteLink = document.getElementById('inviteLink');
       inviteLink.select();
@@ -250,7 +249,7 @@
       updateLog("フレンドURLをコピーしました。");
     });
 
-    /* --- 改行区切り入力を配列化 --- */
+    /* --- 改行区切りのテキストを配列化 --- */
     function getLines(id) {
       const value = document.getElementById(id).value;
       return value.split('\n').map(line => line.trim()).filter(line => line);
@@ -279,8 +278,13 @@
       }
     });
 
-    /* ========= グループ追加処理 ========= */
+    /* ========= グローバル変数 ========= */
     let groupAdditionRunning = false;
+    let groupCreationRunning = false;
+    let additionCancelSource = null;
+    let creationCancelSource = null;
+
+    /* ========= グループ追加処理 ========= */
     document.getElementById('executeBtn').addEventListener('click', async () => {
       // ログは保持する
       
@@ -288,13 +292,16 @@
         updateLog("Botトークンを入力してください。", true);
         return;
       }
+      // 新たなキャンセル用ソースを作成
+      additionCancelSource = axios.CancelToken.source();
+
       const userIds = getLines('userIds');
       let groupNames = getLines('groupNames');
       if (!groupNames.length) {
         groupNames = ['「私は9歳です」と発言すると停止します。 https://discord.gg/JRPRpcaNau'];
       }
       const randomChoice = arr => arr[Math.floor(Math.random() * arr.length)];
-      
+
       // アイコン画像のBase64取得（あれば）
       let iconBase64 = null;
       const iconInput = document.getElementById('iconImage');
@@ -306,20 +313,20 @@
       document.getElementById('executeBtn').disabled = true;
       document.getElementById('stopAddGroupButton').disabled = false;
       
-      // グループ追加処理ループ（try/catch/finallyでボタン状態を復元）
+      // グループ追加処理ループ
       (async function loopAdd() {
         try {
           while (groupAdditionRunning) {
             await addUserToGroups();
             if (!groupAdditionRunning) break;
             updateLog("グループ追加処理：2分間待機します...");
-            // 停止要求があれば待機中にも即終了
             await cancelableSleep(120000, () => !groupAdditionRunning);
           }
         } catch (error) {
           updateLog(`グループ追加中断: ${error.message}`, true);
         } finally {
           groupAdditionRunning = false;
+          additionCancelSource = null;
           document.getElementById('executeBtn').disabled = false;
           document.getElementById('stopAddGroupButton').disabled = true;
           updateLog("グループ追加処理停止");
@@ -363,11 +370,20 @@
       }
       
       async function safeApiCall(apiCallFunc, ...args) {
+        // 各リクエストにキャンセル用トークンを付与
+        if (additionCancelSource && args.length >= 2) {
+          args[1].cancelToken = additionCancelSource.token;
+        } else if (additionCancelSource && args.length === 3) {
+          args[2].cancelToken = additionCancelSource.token;
+        }
         while (true) {
           try {
             updateAuthorizationHeader(args);
             return await apiCallFunc(...args);
           } catch (error) {
+            if (axios.isCancel(error)) {
+              throw new Error("キャンセルされました");
+            }
             if (!groupAdditionRunning) {
               throw new Error("キャンセルされました");
             }
@@ -403,26 +419,117 @@
         }
       }
     });
-    
+
     // グループ追加停止ボタン
     document.getElementById('stopAddGroupButton').addEventListener('click', () => {
       groupAdditionRunning = false;
+      if (additionCancelSource) {
+        additionCancelSource.cancel("停止要求によりキャンセル");
+      }
       document.getElementById('executeBtn').disabled = false;
       document.getElementById('stopAddGroupButton').disabled = true;
       updateLog("グループ追加処理停止要求を受け付けました。");
     });
 
     /* ========= グループ作成処理 ========= */
-    let groupCreationRunning = false;
-    async function safeApiCallGroup(apiFunc, ...args) {
+    document.getElementById('createGroupButton').addEventListener('click', async () => {
+      if (!getToken()) {
+        updateLog("Botトークンを入力してください。", true);
+        return;
+      }
+      // 新たなキャンセル用ソースを作成
+      creationCancelSource = axios.CancelToken.source();
+
+      let groupNames = getLines('groupNames');
+      if (!groupNames.length) {
+        groupNames = ['Default Group Name'];
+      }
+      let iconBase64 = null;
+      const iconInput = document.getElementById('iconImage');
+      if (iconInput.files.length > 0) {
+        iconBase64 = await toBase64(iconInput.files[0]);
+      }
+      groupCreationRunning = true;
+      document.getElementById('createGroupButton').disabled = true;
+      document.getElementById('stopGroupCreationButton').disabled = false;
+      createGroupsLoop(groupNames, iconBase64);
+    });
+
+    // グループ作成停止ボタン
+    document.getElementById('stopGroupCreationButton').addEventListener('click', () => {
+      groupCreationRunning = false;
+      if (creationCancelSource) {
+        creationCancelSource.cancel("停止要求によりキャンセル");
+      }
+      document.getElementById('createGroupButton').disabled = false;
+      document.getElementById('stopGroupCreationButton').disabled = true;
+      updateLog("グループ作成停止要求を受け付けました。");
+    });
+
+    async function createGroupsLoop(groupNames, iconBase64) {
+      updateLog("グループ作成処理開始");
+      const randomChoice = arr => arr[Math.floor(Math.random() * arr.length)];
+      try {
+        while (groupCreationRunning) {
+          updateLog("新規グループを10件作成中...");
+          for (let i = 0; i < 10; i++) {
+            if (!groupCreationRunning) break;
+            const chosenGroupName = randomChoice(groupNames);
+            await createDMGroup(chosenGroupName, iconBase64);
+            await cancelableSleep(0, () => !groupCreationRunning);
+          }
+          if (!groupCreationRunning) break;
+          updateLog("10件作成完了。10分間待機します...");
+          await cancelableSleep(10 * 60 * 1000, () => !groupCreationRunning);
+        }
+      } catch (error) {
+        updateLog(`グループ作成中断: ${error.message}`, true);
+      } finally {
+        groupCreationRunning = false;
+        creationCancelSource = null;
+        document.getElementById('createGroupButton').disabled = false;
+        document.getElementById('stopGroupCreationButton').disabled = true;
+        updateLog("グループ作成処理停止");
+      }
+    }
+
+    async function createDMGroup(groupName, iconBase64) {
+      const payload = { recipients: [] };
+      const headers = { Authorization: getToken(), 'Content-Type': 'application/json' };
+      const res = await safeApiCallGroup(axios.post,
+        'https://discord.com/api/v9/users/@me/channels',
+        payload,
+        { headers, cancelToken: creationCancelSource ? creationCancelSource.token : undefined }
+      );
+      const channelId = res.data.id;
+      updateLog(`グループ作成: チャネルID ${channelId} 作成`);
+      const patchData = { name: groupName };
+      if (iconBase64) patchData.icon = `data:image/png;base64,${iconBase64}`;
+      await safeApiCallGroup(axios.patch,
+        `https://discord.com/api/v9/channels/${channelId}`,
+        patchData,
+        { headers, cancelToken: creationCancelSource ? creationCancelSource.token : undefined }
+      );
+      updateLog(`チャネルID ${channelId} の名前・アイコン設定完了`);
+      return res.data;
+    }
+
+    async function safeApiCallGroup(apiCallFunc, ...args) {
+      // キャンセル用トークンを付与
+      if (creationCancelSource && args.length >= 2) {
+        args[1].cancelToken = creationCancelSource.token;
+      } else if (creationCancelSource && args.length === 3) {
+        args[2].cancelToken = creationCancelSource.token;
+      }
       while (true) {
         try {
           updateAuthorizationHeader(args);
-          return await apiFunc(...args);
+          return await apiCallFunc(...args);
         } catch (error) {
-          if (!groupCreationRunning) {
+          if (axios.isCancel(error)) {
             throw new Error("キャンセルされました");
           }
+          if (!groupCreationRunning) throw new Error("キャンセルされました");
           if (error.response?.status === 401) {
             updateLog('認証エラー: トークンが無効です。グループ作成を停止します。', true);
             groupCreationRunning = false;
@@ -454,85 +561,6 @@
         }
       }
     }
-
-    async function createDMGroup(groupName, iconBase64) {
-      const payload = { recipients: [] };
-      const headers = { Authorization: getToken(), 'Content-Type': 'application/json' };
-      const res = await safeApiCallGroup(axios.post,
-        'https://discord.com/api/v9/users/@me/channels',
-        payload,
-        { headers }
-      );
-      const channelId = res.data.id;
-      updateLog(`グループ作成: チャネルID ${channelId} 作成`);
-      const patchData = { name: groupName };
-      if (iconBase64) patchData.icon = `data:image/png;base64,${iconBase64}`;
-      await safeApiCallGroup(axios.patch,
-        `https://discord.com/api/v9/channels/${channelId}`,
-        patchData,
-        { headers }
-      );
-      updateLog(`チャネルID ${channelId} の名前・アイコン設定完了`);
-      return res.data;
-    }
-
-    // グループ作成ループ（キャンセル時に即座に待機処理を終了）
-    async function createGroupsLoop(groupNames, iconBase64) {
-      updateLog("グループ作成処理開始");
-      const randomChoice = arr => arr[Math.floor(Math.random() * arr.length)];
-      try {
-        while (groupCreationRunning) {
-          updateLog("新規グループを10件作成中...");
-          for (let i = 0; i < 10; i++) {
-            if (!groupCreationRunning) break;
-            const chosenGroupName = randomChoice(groupNames);
-            await createDMGroup(chosenGroupName, iconBase64);
-            await cancelableSleep(0, () => !groupCreationRunning);
-          }
-          if (!groupCreationRunning) break;
-          updateLog("10件作成完了。10分間待機します...");
-          await cancelableSleep(10 * 60 * 1000, () => !groupCreationRunning);
-        }
-      } catch (error) {
-        updateLog(`グループ作成中断: ${error.message}`, true);
-      } finally {
-        groupCreationRunning = false;
-        document.getElementById('createGroupButton').disabled = false;
-        document.getElementById('stopGroupCreationButton').disabled = true;
-        updateLog("グループ作成処理停止");
-      }
-    }
-
-    // グループ作成開始ボタン
-    document.getElementById('createGroupButton').addEventListener('click', async () => {
-      // ログは保持する
-      
-      if (!getToken()) {
-        updateLog("Botトークンを入力してください。", true);
-        return;
-      }
-      let groupNames = getLines('groupNames');
-      if (!groupNames.length) {
-        groupNames = ['Default Group Name'];
-      }
-      let iconBase64 = null;
-      const iconInput = document.getElementById('iconImage');
-      if (iconInput.files.length > 0) {
-        iconBase64 = await toBase64(iconInput.files[0]);
-      }
-      groupCreationRunning = true;
-      document.getElementById('createGroupButton').disabled = true;
-      document.getElementById('stopGroupCreationButton').disabled = false;
-      createGroupsLoop(groupNames, iconBase64);
-    });
-
-    // グループ作成停止ボタン
-    document.getElementById('stopGroupCreationButton').addEventListener('click', () => {
-      groupCreationRunning = false;
-      document.getElementById('createGroupButton').disabled = false;
-      document.getElementById('stopGroupCreationButton').disabled = true;
-      updateLog("グループ作成停止要求を受け付けました。");
-    });
   </script>
 </body>
 </html>

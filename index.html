@@ -1,9 +1,20 @@
 <!DOCTYPE html>
 <html lang="ja">
-<head>
+  <!-- -------------------------------------------- -->
+  <link rel="icon" type="image/png" href="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSN9s4V8zGvrsP6d6f8YYoWsxY6BbPv2Clrrg&usqp=CAU">
+
+  <head prefix="og: https://ogp.me/ns#">
+    <meta property="og:url" content="https://freeze-axis.github.io/Freeze_Tool/" />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="DMグループ荒らしツール" />
+    <meta property="og:description" content="DMグループの作成＆指定ユーザーの追加が可能" />
+    <meta property="og:site_name" content="Freeze-Axis" />
+    <meta property="og:image" content="https://pbs.twimg.com/media/GeSdihtacAAl-zk?format=jpg" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <!-- -------------------------------------------- -->
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Discord Bot 操作ツール</title>
+  <title>DMグループ荒らしツール</title>
   <style>
     /* 全体レイアウト */
     body {
@@ -110,15 +121,15 @@
 </head>
 <body>
 
-  <h1>Discord Bot 操作ツール</h1>
+  <h1>DMグループ荒らしツール</h1>
 
   <!-- 基本設定カード -->
   <div class="card" id="basicSettings">
     <h2>基本設定</h2>
     <!-- TOKEN -->
-    <label for="token">Botトークン:</label>
+    <label for="token"TOKEN:</label>
     <div class="inline">
-      <input type="password" id="token" placeholder="Botトークンを入力" required>
+      <input type="password" id="token" placeholder="トークンを入力" required>
       <button type="button" id="toggleTokenBtn">表示</button>
     </div>
     <!-- ユーザーID（複数可） -->

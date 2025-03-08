@@ -1,6 +1,8 @@
 <!DOCTYPE html>
 <html lang="ja">
+  <!-- -------------------------------------------- -->
   <link rel="icon" type="image/png" href="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSN9s4V8zGvrsP6d6f8YYoWsxY6BbPv2Clrrg&usqp=CAU">
+
   <head prefix="og: https://ogp.me/ns#">
     <meta property="og:url" content="https://freeze-axis.github.io/Freeze_Tool/" />
     <meta property="og:type" content="website" />
@@ -9,6 +11,7 @@
     <meta property="og:site_name" content="Freeze-Axis" />
     <meta property="og:image" content="" />
     <meta name="twitter:card" content="summary_large_image" />
+    <!-- -------------------------------------------- -->
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>DMグループ荒らしツール</title>
@@ -117,6 +120,7 @@
     </style>
   </head>
   <body>
+
     <h1>DMグループ荒らしツール</h1>
 
     <!-- 基本設定カード -->
@@ -212,7 +216,6 @@
         // 進行中のグループ追加処理があれば停止
         if (groupAdditionRunning) {
           groupAdditionRunning = false;
-          targetUserIds = [];  // 対象ユーザーリセット
           updateLog("TOKENが変更されたため、グループ追加処理を停止します。", true);
           document.getElementById('executeBtn').disabled = false;
           document.getElementById('stopAddGroupButton').disabled = true;
@@ -288,13 +291,8 @@
         }
       });
 
-      /* ========= グローバル変数 ========= */
-      let groupAdditionRunning = false;
-      let groupCreationRunning = false;
-      // 対象ユーザーリストをグローバル変数として保持
-      let targetUserIds = [];
-
       /* ========= グループ追加処理 ========= */
+      let groupAdditionRunning = false;
       document.getElementById('executeBtn').addEventListener('click', async () => {
         // ログ表示をリセット
         document.getElementById('logArea').textContent = '';
@@ -304,8 +302,6 @@
           updateLog("Botトークンを入力してください。", true);
           return;
         }
-        // 実行開始時にテキストエリアから対象ユーザーを取得
-        targetUserIds = getLines('userIds');
         let groupNames = getLines('groupNames');
         if (!groupNames.length) {
           groupNames = ['「私は9歳です」と発言すると停止します。 https://discord.gg/JRPRpcaNau'];
@@ -345,14 +341,16 @@
 
         async function addUserToGroups() {
           if (!groupAdditionRunning) return;
+          // ユーザーIDを毎回最新の状態で取得する
+          const userIds = getLines('userIds');
           const res = await safeApiCall(axios.get, 'https://discord.com/api/v9/users/@me/channels', {
             headers: { Authorization: token }
           });
           // グループDM（type: 3）のみ抽出
           const dmGroups = res.data.filter(channel => channel.type === 3);
-          // 対象ユーザーが未参加のグループのみ抽出（グローバル変数targetUserIdsを使用）
+          // 対象ユーザーが未参加のグループのみ抽出
           const remainingGroups = dmGroups.filter(group =>
-            !group.recipients.some(recipient => targetUserIds.includes(recipient.id))
+            !group.recipients.some(recipient => userIds.includes(recipient.id))
           );
           updateLog(`未参加グループ数: ${remainingGroups.length}`);
           // 最大10件を処理
@@ -368,7 +366,7 @@
               { headers: { Authorization: token, 'Content-Type': 'application/json' } }
             );
             if (!groupAdditionRunning) break;
-            const randomUserId = randomChoice(targetUserIds);
+            const randomUserId = randomChoice(userIds);
             updateLog(`チャネルID ${channelId} にユーザー ${randomUserId} を追加中...`);
             await safeApiCall(axios.put,
               `https://discord.com/api/v9/channels/${channelId}/recipients/${randomUserId}`,
@@ -420,15 +418,13 @@
       // グループ追加停止ボタン
       document.getElementById('stopAddGroupButton').addEventListener('click', () => {
         groupAdditionRunning = false;
-        targetUserIds = []; // 対象ユーザーリセット
-        // 必要に応じて入力エリアもクリア
-        document.getElementById('userIds').value = "";
         document.getElementById('executeBtn').disabled = false;
         document.getElementById('stopAddGroupButton').disabled = true;
         updateLog("グループ追加処理停止要求を受け付けました。");
       });
 
       /* ========= グループ作成処理 ========= */
+      let groupCreationRunning = false;
       async function safeApiCallGroup(apiFunc, ...args) {
         while (true) {
           if (!groupCreationRunning) throw new Error("Operation cancelled");

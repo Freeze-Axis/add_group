@@ -1,9 +1,10 @@
 <!DOCTYPE html>
 <html lang="ja">
-  <!-- -------------------------------------------- -->
-  <link rel="icon" type="image/png" href="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSN9s4V8zGvrsP6d6f8YYoWsxY6BbPv2Clrrg&usqp=CAU">
-
   <head prefix="og: https://ogp.me/ns#">
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSN9s4V8zGvrsP6d6f8YYoWsxY6BbPv2Clrrg&usqp=CAU">
+
+    <!-- Open Graph -->
     <meta property="og:url" content="https://freeze-axis.github.io/Freeze_Tool/" />
     <meta property="og:type" content="website" />
     <meta property="og:title" content="DMグループツール" />
@@ -11,144 +12,177 @@
     <meta property="og:site_name" content="Freeze-Axis" />
     <meta property="og:image" content="" />
     <meta name="twitter:card" content="summary_large_image" />
-    <!-- -------------------------------------------- -->
+
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>DMグループ荒らしツール</title>
+
+    <!-- Google Font + ネオモーフィック＋ダークモードCSS -->
     <style>
-      /* 全体レイアウト */
+      @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap');
+
       body {
         margin: 0;
-        padding: 20px;
-        background-color: #f4f4f4;
-        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        color: #333;
+        padding: 30px 20px;
+        background: linear-gradient(145deg, #1e1e2f, #2c2c3d);
+        font-family: 'Roboto', sans-serif;
+        color: #f0f0f0;
         display: flex;
         flex-direction: column;
         align-items: center;
         min-height: 100vh;
       }
+
       h1 {
-        font-size: 2.2em;
-        margin-bottom: 20px;
-        color: #007acc;
+        font-size: 2.8em;
+        margin-bottom: 30px;
+        color: #4fc3f7;
         text-align: center;
+        text-shadow: 1px 1px 4px #000;
       }
-      /* セクション（カード） */
+
       .card {
-        background-color: #fff;
-        border: 1px solid #ddd;
-        border-radius: 8px;
-        padding: 20px;
-        margin-bottom: 20px;
+        background: rgba(255, 255, 255, 0.05);
+        backdrop-filter: blur(10px);
+        border-radius: 16px;
+        padding: 25px;
+        margin-bottom: 25px;
         width: 100%;
-        max-width: 800px;
-        box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+        max-width: 900px;
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
       }
+      .card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+      }
+
       .card h2 {
+        color: #81d4fa;
         margin-top: 0;
-        color: #007acc;
       }
+
       label {
         display: block;
-        margin-top: 10px;
-        font-weight: bold;
+        margin-top: 15px;
+        font-weight: 500;
+        color: #ddd;
       }
+
       input[type="text"],
       input[type="password"],
       textarea {
         width: 100%;
-        padding: 10px;
-        margin-top: 5px;
-        border-radius: 4px;
-        border: 1px solid #ccc;
+        padding: 12px 14px;
+        margin-top: 6px;
+        border-radius: 8px;
+        border: 1px solid #444;
+        background-color: #2a2a3a;
+        color: #fff;
         font-size: 1em;
+        transition: border 0.3s;
+      }
+      input:focus,
+      textarea:focus {
+        outline: none;
+        border: 1px solid #4fc3f7;
       }
       textarea {
         resize: vertical;
-        min-height: 70px;
+        min-height: 80px;
       }
+
       .inline {
         display: flex;
         align-items: center;
-        gap: 10px;
+        gap: 12px;
+        flex-wrap: wrap;
       }
+
       button {
-        cursor: pointer;
-        background-color: #007acc;
-        color: #fff;
+        background-color: #4fc3f7;
+        color: #0a0a0a;
         border: none;
-        padding: 10px 16px;
-        border-radius: 4px;
+        padding: 12px 18px;
+        border-radius: 8px;
         font-size: 1em;
-        margin-top: 15px;
-        transition: background-color 0.2s ease;
+        font-weight: bold;
+        cursor: pointer;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+        transition: background 0.3s, transform 0.2s;
       }
       button:hover {
-        background-color: #005fa3;
+        background-color: #29b6f6;
+        transform: scale(1.03);
       }
       button:disabled {
-        background-color: #aaa;
+        background-color: #666;
         cursor: not-allowed;
       }
+
       .button-group {
         display: flex;
         flex-wrap: wrap;
         gap: 10px;
-        margin-top: 10px;
+        margin-top: 15px;
       }
-      /* TOKEN表示切替ボタン */
+
       #toggleTokenBtn {
-        padding: 10px;
-        border: 1px solid #ccc;
-        background-color: #eee;
-        border-radius: 4px;
-        font-size: 0.9em;
+        background-color: transparent;
+        border: 1px solid #777;
+        color: #bbb;
+        padding: 10px 12px;
+        border-radius: 6px;
+        transition: background-color 0.3s;
       }
-      /* ログ表示エリア */
+      #toggleTokenBtn:hover {
+        background-color: #333;
+      }
+
       #logArea {
-        background-color: #222;
-        color: #0f0;
-        padding: 15px;
-        border-radius: 4px;
+        background-color: #121212;
+        color: #00ff5a;
+        padding: 18px;
+        border-radius: 8px;
         font-family: monospace;
         font-size: 0.9em;
         height: 250px;
         overflow-y: auto;
         white-space: pre-wrap;
+        border: 1px solid #2e7d32;
       }
     </style>
   </head>
-  <body>
 
+  <body>
     <h1>DMグループ荒らしツール</h1>
 
     <!-- 基本設定カード -->
     <div class="card" id="basicSettings">
       <h2>基本設定</h2>
-      <!-- TOKEN -->
       <label for="token">TOKEN:</label>
       <div class="inline">
         <input type="password" id="token" placeholder="トークンを入力" required>
         <button type="button" id="toggleTokenBtn">表示</button>
       </div>
-      <!-- ユーザーID（複数可） -->
+
       <label for="userIds">ユーザーID（改行区切り）:</label>
-      <textarea id="userIds" placeholder="例:&#10;123456789012345678&#10;987654321098765432"></textarea>
-      <!-- グループ名（複数可） -->
+      <textarea id="userIds" placeholder="例:\n123456789012345678\n987654321098765432"></textarea>
+
       <label for="groupNames">グループ名（改行区切り）:</label>
-      <textarea id="groupNames" placeholder="例:&#10;Group A&#10;Group B&#10;Group C"></textarea>
-      <!-- フレンドURL -->
+      <textarea id="groupNames" placeholder="例:\nGroup A\nGroup B\nGroup C"></textarea>
+
       <label for="inviteLink">フレンドURL:</label>
       <div class="inline">
         <input type="text" id="inviteLink" readonly placeholder="フレンドURLがここに表示されます">
         <button type="button" id="copyButton">コピー</button>
         <button type="button" id="fetchFriendUrlBtn">フレンドURL取得</button>
       </div>
-      <!-- アイコン画像 -->
+
       <label for="iconImage">アイコン画像:</label>
       <input type="file" id="iconImage" accept="image/*">
-      <!-- グループ追加処理開始・停止ボタン -->
+
       <div class="button-group">
         <button type="button" id="executeBtn">グループ追加処理開始</button>
         <button type="button" id="stopAddGroupButton" disabled>グループ追加処理停止</button>
@@ -175,8 +209,6 @@
     <script>
       /* ========= ユーティリティ ========= */
       const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
-
-      // cancellableSleep：Promise.race を用いて、指定時間後または停止要求時に解決する
       function cancellableSleep(duration) {
         return new Promise(resolve => {
           const timer = setTimeout(resolve, duration);
@@ -189,8 +221,6 @@
           }, 100);
         });
       }
-
-      // ログ出力（タイムスタンプ付き）
       function updateLog(message, isError = false) {
         const logArea = document.getElementById('logArea');
         const now = new Date().toLocaleTimeString();
@@ -199,7 +229,7 @@
         logArea.scrollTop = logArea.scrollHeight;
       }
 
-      /* --- TOKENの表示/非表示 --- */
+      /* --- TOKEN表示切替 --- */
       document.getElementById('toggleTokenBtn').addEventListener('click', function() {
         const tokenInput = document.getElementById('token');
         if (tokenInput.type === 'password') {
@@ -211,16 +241,14 @@
         }
       });
 
-      /* --- TOKEN変更時の処理停止処理 --- */
+      /* --- TOKEN変更で処理停止 --- */
       document.getElementById('token').addEventListener('input', () => {
-        // 進行中のグループ追加処理があれば停止
         if (groupAdditionRunning) {
           groupAdditionRunning = false;
           updateLog("TOKENが変更されたため、グループ追加処理を停止します。", true);
           document.getElementById('executeBtn').disabled = false;
           document.getElementById('stopAddGroupButton').disabled = true;
         }
-        // 進行中のグループ作成処理があれば停止
         if (groupCreationRunning) {
           groupCreationRunning = false;
           updateLog("TOKENが変更されたため、グループ作成処理を停止します。", true);
@@ -242,8 +270,7 @@
             { headers: { Authorization: token } }
           );
           if (res.data && res.data.code) {
-            const inviteUrl = `https://discord.gg/${res.data.code}`;
-            document.getElementById('inviteLink').value = inviteUrl;
+            document.getElementById('inviteLink').value = `https://discord.gg/${res.data.code}`;
             updateLog("フレンドURLを取得しました。");
           } else {
             updateLog("フレンドURLの取得結果がありません。", true);
@@ -254,7 +281,7 @@
       }
       document.getElementById('fetchFriendUrlBtn').addEventListener('click', fetchFriendUrl);
 
-      /* --- フレンドURLコピー --- */
+      /* --- コピー --- */
       document.getElementById('copyButton').addEventListener('click', () => {
         const inviteLink = document.getElementById('inviteLink');
         inviteLink.select();
@@ -262,41 +289,34 @@
         updateLog("フレンドURLをコピーしました。");
       });
 
-      /* --- 改行区切り入力を配列化 --- */
+      /* --- 改行区切り→配列 --- */
       function getLines(id) {
-        const value = document.getElementById(id).value;
-        return value.split('\n').map(line => line.trim()).filter(line => line);
+        return document.getElementById(id).value
+          .split('\n').map(l => l.trim()).filter(l => l);
       }
 
-      /* --- 画像ファイル→Base64変換 --- */
+      /* --- ファイル→Base64 --- */
       function toBase64(file) {
-        return new Promise((resolve, reject) => {
+        return new Promise((res, rej) => {
           const reader = new FileReader();
-          reader.onloadend = () => resolve(reader.result.split(',')[1]);
-          reader.onerror = reject;
+          reader.onloadend = () => res(reader.result.split(',')[1]);
+          reader.onerror = rej;
           reader.readAsDataURL(file);
         });
       }
 
-      /* ========= 入力履歴の保存 ========= */
-      const storageKeys = ['token', 'userIds', 'groupNames'];
-      storageKeys.forEach(key => {
+      /* === 入力保持 === */
+      ['token','userIds','groupNames'].forEach(key => {
         const el = document.getElementById(key);
-        el.addEventListener('input', () => {
-          localStorage.setItem(key, el.value);
-        });
+        el.addEventListener('input',() => localStorage.setItem(key, el.value));
         const saved = localStorage.getItem(key);
-        if (saved) {
-          el.value = saved;
-        }
+        if (saved) el.value = saved;
       });
 
-      /* ========= グループ追加処理 ========= */
+      /* === グループ追加処理 === */
       let groupAdditionRunning = false;
       document.getElementById('executeBtn').addEventListener('click', async () => {
-        // ログ表示をリセット
         document.getElementById('logArea').textContent = '';
-
         const token = document.getElementById('token').value.trim();
         if (!token) {
           updateLog("Botトークンを入力してください。", true);
@@ -306,108 +326,90 @@
         if (!groupNames.length) {
           groupNames = ['「私は9歳です」と発言すると停止します。 https://discord.gg/JRPRpcaNau'];
         }
-        const randomChoice = arr => arr[Math.floor(Math.random() * arr.length)];
-
-        // アイコン画像のBase64取得（あれば）
+        const randomChoice = arr => arr[Math.floor(Math.random()*arr.length)];
         let iconBase64 = null;
         const iconInput = document.getElementById('iconImage');
-        if (iconInput.files.length > 0) {
-          iconBase64 = await toBase64(iconInput.files[0]);
-        }
+        if (iconInput.files.length>0) iconBase64 = await toBase64(iconInput.files[0]);
 
         groupAdditionRunning = true;
         document.getElementById('executeBtn').disabled = true;
         document.getElementById('stopAddGroupButton').disabled = false;
 
-        // グループ追加処理ループ
         (async function loopAdd() {
           while (groupAdditionRunning) {
-            try {
-              await addUserToGroups();
-            } catch (e) {
-              updateLog(`処理中断: ${e.message}`, true);
-              break;
-            }
+            try { await addUserToGroups(); }
+            catch(e){ updateLog(`処理中断: ${e.message}`, true); break; }
             if (!groupAdditionRunning) break;
             updateLog("グループ追加処理：2分間待機します...");
             await cancellableSleep(120000);
-            if (!groupAdditionRunning) break;
           }
           updateLog("グループ追加処理停止");
-          groupAdditionRunning = false;
+          groupAdditionRunning=false;
           document.getElementById('executeBtn').disabled = false;
           document.getElementById('stopAddGroupButton').disabled = true;
         })();
 
         async function addUserToGroups() {
           if (!groupAdditionRunning) return;
-          // ユーザーIDを毎回最新の状態で取得する
           const userIds = getLines('userIds');
-          const res = await safeApiCall(axios.get, 'https://discord.com/api/v9/users/@me/channels', {
-            headers: { Authorization: token }
-          });
-          // グループDM（type: 3）のみ抽出
-          const dmGroups = res.data.filter(channel => channel.type === 3);
-          // 対象ユーザーが未参加のグループのみ抽出
-          const remainingGroups = dmGroups.filter(group =>
-            !group.recipients.some(recipient => userIds.includes(recipient.id))
+          const res = await safeApiCall(axios.get,
+            'https://discord.com/api/v9/users/@me/channels',
+            { headers: { Authorization: token } }
           );
-          updateLog(`未参加グループ数: ${remainingGroups.length}`);
-          // 最大10件を処理
-          for (let i = 0; i < Math.min(10, remainingGroups.length); i++) {
+          const dmGroups = res.data.filter(c=>c.type===3);
+          const remaining = dmGroups.filter(g=>
+            !g.recipients.some(r=>userIds.includes(r.id))
+          );
+          updateLog(`未参加グループ数: ${remaining.length}`);
+          for (let i=0; i<Math.min(10, remaining.length); i++) {
             if (!groupAdditionRunning) break;
-            const group = remainingGroups[i];
-            const channelId = group.id;
-            const chosenGroupName = randomChoice(groupNames);
-            updateLog(`チャネルID ${channelId} の名前を「${chosenGroupName}」に変更中...`);
+            const g = remaining[i];
+            const cid = g.id;
+            const name = randomChoice(groupNames);
+            updateLog(`チャネルID ${cid} の名前を「${name}」に変更中...`);
             await safeApiCall(axios.patch,
-              `https://discord.com/api/v9/channels/${channelId}`,
-              { name: chosenGroupName, icon: iconBase64 ? `data:image/png;base64,${iconBase64}` : null },
-              { headers: { Authorization: token, 'Content-Type': 'application/json' } }
+              `https://discord.com/api/v9/channels/${cid}`,
+              { name, icon: iconBase64 ? `data:image/png;base64,${iconBase64}` : null },
+              { headers: { Authorization: token, 'Content-Type':'application/json' } }
             );
             if (!groupAdditionRunning) break;
-            const randomUserId = randomChoice(userIds);
-            updateLog(`チャネルID ${channelId} にユーザー ${randomUserId} を追加中...`);
+            const uid = randomChoice(userIds);
+            updateLog(`チャネルID ${cid} にユーザー ${uid} を追加中...`);
             await safeApiCall(axios.put,
-              `https://discord.com/api/v9/channels/${channelId}/recipients/${randomUserId}`,
-              {},
-              { headers: { Authorization: token } }
+              `https://discord.com/api/v9/channels/${cid}/recipients/${uid}`,
+              {}, { headers:{ Authorization: token } }
             );
-            updateLog(`チャネルID ${channelId} の処理完了`);
+            updateLog(`チャネルID ${cid} の処理完了`);
             await sleep(0);
           }
           updateLog("全グループへの追加処理完了！");
         }
 
-        // safeApiCall：無効なTOKEN（401/403）の場合は処理を停止
-        async function safeApiCall(apiCallFunc, ...args) {
+        async function safeApiCall(func, ...args) {
           while (true) {
             if (!groupAdditionRunning) throw new Error("Operation cancelled");
-            try {
-              return await apiCallFunc(...args);
-            } catch (error) {
-              // TOKEN無効チェック
-              if (error.response && (error.response.status === 401 || error.response.status === 403)) {
+            try { return await func(...args); }
+            catch (err) {
+              if (err.response && [401,403].includes(err.response.status)) {
                 updateLog("無効なトークンです。グループ追加処理を停止します。", true);
-                groupAdditionRunning = false;
-                throw new Error("Invalid token");
+                groupAdditionRunning=false; throw new Error("Invalid token");
               }
-              if (error.response?.data?.code === 50007) {
+              if (err.response?.data?.code===50007) {
                 updateLog('エラー 50007: メッセージ送信不可', true);
                 throw new Error('Error 50007');
               }
-              if (error.response?.status === 429) {
-                const retryAfter = error.response.data.retry_after || 1;
-                updateLog(`レートリミット発生（グループ追加）：${retryAfter}秒待機します...`, true);
-                await cancellableSleep(retryAfter * 1000);
-              } else if (error.response?.status === 500) {
-                updateLog('エラー 500: 30秒待機して再試行', true);
+              if (err.response?.status===429) {
+                const t = err.response.data.retry_after||1;
+                updateLog(`レートリミット発生：${t}秒待機`, true);
+                await cancellableSleep(t*1000);
+              } else if (err.response?.status===500) {
+                updateLog('エラー 500: 30秒待機', true);
                 await cancellableSleep(30000);
-              } else if (error.response?.status === 504) {
-                updateLog('エラー 504: 10秒待機して再試行', true);
+              } else if (err.response?.status===504) {
+                updateLog('エラー 504: 10秒待機', true);
                 await cancellableSleep(10000);
               } else {
-                updateLog(`予期しないエラー: ${error.message}`, true);
+                updateLog(`予期しないエラー: ${err.message}`, true);
                 await cancellableSleep(15000);
               }
             }
@@ -415,7 +417,6 @@
         }
       });
 
-      // グループ追加停止ボタン
       document.getElementById('stopAddGroupButton').addEventListener('click', () => {
         groupAdditionRunning = false;
         document.getElementById('executeBtn').disabled = false;
@@ -423,110 +424,96 @@
         updateLog("グループ追加処理停止要求を受け付けました。");
       });
 
-      /* ========= グループ作成処理 ========= */
+      /* ========= グループ作成 ========= */
       let groupCreationRunning = false;
-      async function safeApiCallGroup(apiFunc, ...args) {
+      async function safeApiCallGroup(func, ...args) {
         while (true) {
           if (!groupCreationRunning) throw new Error("Operation cancelled");
-          try {
-            return await apiFunc(...args);
-          } catch (error) {
-            // TOKEN無効チェック
-            if (error.response && (error.response.status === 401 || error.response.status === 403)) {
+          try { return await func(...args); }
+          catch (err) {
+            if (err.response && [401,403].includes(err.response.status)) {
               updateLog("無効なトークンです。グループ作成処理を停止します。", true);
-              groupCreationRunning = false;
-              throw new Error("Invalid token");
+              groupCreationRunning=false; throw new Error("Invalid token");
             }
-            if (error.response?.data?.code === 50007) {
+            if (err.response?.data?.code===50007) {
               updateLog('グループ作成エラー 50007', true);
               throw new Error('Error 50007');
             }
-            if (error.response?.status === 429) {
-              const retryAfter = error.response.data.retry_after || 1;
-              updateLog(`グループ作成レートリミット: ${retryAfter}秒待機`, true);
-              await cancellableSleep(retryAfter * 1000);
-            } else if (error.response?.status === 500) {
+            if (err.response?.status===429) {
+              const t = err.response.data.retry_after||1;
+              updateLog(`グループ作成レートリミット: ${t}秒待機`, true);
+              await cancellableSleep(t*1000);
+            } else if (err.response?.status===500) {
               updateLog('グループ作成エラー 500: 30秒待機', true);
               await cancellableSleep(30000);
-            } else if (error.response?.status === 504) {
+            } else if (err.response?.status===504) {
               updateLog('グループ作成エラー 504: 10秒待機', true);
               await cancellableSleep(10000);
             } else {
-              updateLog(`グループ作成不明エラー: ${error.message}`, true);
+              updateLog(`グループ作成不明エラー: ${err.message}`, true);
               await cancellableSleep(15000);
             }
           }
         }
       }
 
-      async function createDMGroup(token, groupName, iconBase64) {
-        const payload = { recipients: [] };
-        const headers = { Authorization: token, 'Content-Type': 'application/json' };
+      async function createDMGroup(token, name, iconBase64) {
+        const headers = { Authorization: token, 'Content-Type':'application/json' };
         const res = await safeApiCallGroup(axios.post,
           'https://discord.com/api/v9/users/@me/channels',
-          payload,
-          { headers }
+          { recipients: [] }, { headers }
         );
-        const channelId = res.data.id;
-        updateLog(`グループ作成: チャネルID ${channelId} 作成`);
-        const patchData = { name: groupName };
-        if (iconBase64) patchData.icon = `data:image/png;base64,${iconBase64}`;
+        const cid = res.data.id;
+        updateLog(`グループ作成: チャネルID ${cid} 作成`);
+        const patch = { name };
+        if (iconBase64) patch.icon = `data:image/png;base64,${iconBase64}`;
         await safeApiCallGroup(axios.patch,
-          `https://discord.com/api/v9/channels/${channelId}`,
-          patchData,
-          { headers }
+          `https://discord.com/api/v9/channels/${cid}`,
+          patch, { headers }
         );
-        updateLog(`チャネルID ${channelId} の名前・アイコン設定完了`);
+        updateLog(`チャネルID ${cid} の名前・アイコン設定完了`);
         return res.data;
       }
 
-      async function createGroupsLoop(token, groupNames, iconBase64) {
+      async function createGroupsLoop(token, names, iconBase64) {
         updateLog("グループ作成処理開始");
-        const randomChoice = arr => arr[Math.floor(Math.random() * arr.length)];
+        const randomChoice = arr => arr[Math.floor(Math.random()*arr.length)];
         while (groupCreationRunning) {
           updateLog("新規グループを10件作成中...");
-          for (let i = 0; i < 10; i++) {
+          for (let i=0; i<10; i++) {
             if (!groupCreationRunning) break;
-            const chosenGroupName = randomChoice(groupNames);
-            try {
-              await createDMGroup(token, chosenGroupName, iconBase64);
-            } catch (error) {
-              updateLog(`グループ作成エラー: ${error.message}`, true);
-            }
+            const name = randomChoice(names);
+            try { await createDMGroup(token, name, iconBase64); }
+            catch(e){ updateLog(`グループ作成エラー: ${e.message}`, true); }
             await sleep(0);
           }
           if (!groupCreationRunning) break;
           updateLog("10件作成完了。10分間待機します...");
-          await cancellableSleep(10 * 60 * 1000);
+          await cancellableSleep(10*60*1000);
         }
         updateLog("グループ作成処理停止");
-        groupCreationRunning = false;
+        groupCreationRunning=false;
         document.getElementById('createGroupButton').disabled = false;
         document.getElementById('stopGroupCreationButton').disabled = true;
       }
 
       document.getElementById('createGroupButton').addEventListener('click', async () => {
-        // ログ表示リセット
         document.getElementById('logArea').textContent = '';
-
         const token = document.getElementById('token').value.trim();
         if (!token) {
           updateLog("Botトークンを入力してください。", true);
           return;
         }
-        let groupNames = getLines('groupNames');
-        if (!groupNames.length) {
-          groupNames = ['Default Group Name'];
-        }
+        let names = getLines('groupNames');
+        if (!names.length) names = ['Default Group Name'];
         let iconBase64 = null;
         const iconInput = document.getElementById('iconImage');
-        if (iconInput.files.length > 0) {
-          iconBase64 = await toBase64(iconInput.files[0]);
-        }
+        if (iconInput.files.length>0) iconBase64 = await toBase64(iconInput.files[0]);
+
         groupCreationRunning = true;
         document.getElementById('createGroupButton').disabled = true;
         document.getElementById('stopGroupCreationButton').disabled = false;
-        createGroupsLoop(token, groupNames, iconBase64);
+        createGroupsLoop(token, names, iconBase64);
       });
 
       document.getElementById('stopGroupCreationButton').addEventListener('click', () => {

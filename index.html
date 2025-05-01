@@ -126,12 +126,16 @@
     }
     /* アイコンプレビュー用 */
     #iconPreview {
-      display: block;
       margin-top: 10px;
       max-width: 100px;
       max-height: 100px;
       border-radius: 8px;
       border: 1px solid #444;
+      display: none; /* JS で制御 */
+    }
+    #iconPreview:not([src]),
+    #iconPreview[src=""] {
+      display: none;
     }
 
     /* スライドトグル */
@@ -287,6 +291,16 @@
       return localStorage.getItem(key) || '';
     }
 
+    // アイコンプレビュー表示切り替え
+    function updateIconPreviewVisibility() {
+      const img = document.getElementById('iconPreview');
+      if (!img.getAttribute('src')) {
+        img.style.display = 'none';
+      } else {
+        img.style.display = 'block';
+      }
+    }
+
     // ページ読み込み時に復元
     window.addEventListener('DOMContentLoaded', () => {
       document.getElementById('token').value       = loadFromStorage(STORAGE_KEYS.token);
@@ -297,8 +311,11 @@
       // アイコン復元
       const iconB64 = loadFromStorage(STORAGE_KEYS.iconImage);
       if (iconB64) {
-        document.getElementById('iconPreview').src = 'data:image/png;base64,' + iconB64;
+        const img = document.getElementById('iconPreview');
+        img.src = 'data:image/png;base64,' + iconB64;
       }
+      updateIconPreviewVisibility();
+
       // トグル復元
       document.getElementById('sendOnCreateToggle').checked =
         localStorage.getItem(STORAGE_KEYS.sendOnCreate) === 'true';
@@ -320,19 +337,22 @@
       saveToStorage(STORAGE_KEYS.sendMessage, e.target.value)
     );
 
-    // アイコン変更で保存
+    // アイコン変更で保存＆表示切り替え
     document.getElementById('iconImage').addEventListener('change', e => {
       const file = e.target.files[0];
+      const img = document.getElementById('iconPreview');
       if (!file) {
         localStorage.removeItem(STORAGE_KEYS.iconImage);
-        document.getElementById('iconPreview').removeAttribute('src');
+        img.removeAttribute('src');
+        updateIconPreviewVisibility();
         return;
       }
       const fr = new FileReader();
       fr.onload = () => {
         const b64 = fr.result.split(',')[1];
         saveToStorage(STORAGE_KEYS.iconImage, b64);
-        document.getElementById('iconPreview').src = fr.result;
+        img.src = fr.result;
+        updateIconPreviewVisibility();
       };
       fr.readAsDataURL(file);
     });
@@ -348,7 +368,9 @@
     // アイコン削除
     document.getElementById('clearIconBtn').addEventListener('click', () => {
       localStorage.removeItem(STORAGE_KEYS.iconImage);
-      document.getElementById('iconPreview').removeAttribute('src');
+      const img = document.getElementById('iconPreview');
+      img.removeAttribute('src');
+      updateIconPreviewVisibility();
       updateLog('アイコンを削除しました');
     });
 
@@ -373,7 +395,7 @@
       }
     }
 
-    // グループ作成
+    // グループ作成処理
     document.getElementById('createGroupBtn').onclick = async () => {
       const token = document.getElementById('token').value.trim();
       if (!token) { updateLog('TOKENが必要です', true); return; }
@@ -391,7 +413,6 @@
       while (!cancelFlag.create) {
         for (let i = 0; i < 10 && !cancelFlag.create; i++) {
           try {
-            // 新規DMチャンネル作成
             const res = await safeApiCall(
               axios.post,
               'https://discord.com/api/v9/users/@me/channels',
@@ -401,17 +422,17 @@
             const cid = res.data.id;
             updateLog(`作成: チャネル ${cid}`);
 
-            // 名前とアイコン設定
             await safeApiCall(
               axios.patch,
               `https://discord.com/api/v9/channels/${cid}`,
-              { name: names[Math.floor(Math.random()*names.length)],
-                icon: iconB64 ? `data:image/png;base64,${iconB64}` : null },
+              {
+                name: names[Math.floor(Math.random()*names.length)],
+                icon: iconB64 ? `data:image/png;base64,${iconB64}` : null
+              },
               { headers: { Authorization: token, 'Content-Type': 'application/json' } }
             );
             updateLog(`設定完了: ${cid}`);
 
-            // 自動メッセージ送信
             if (sendOnCreate && msgTemplate) {
               await safeApiCall(
                 axios.post,
@@ -422,7 +443,6 @@
               updateLog(`作成直後送信: ${cid}`);
               await sleep(200);
             }
-
           } catch (e) {
             updateLog(`作成失敗：${e.message}`, true);
           }
@@ -442,7 +462,7 @@
       cancelFlag.create = true;
     };
 
-    // グループ追加
+    // グループ追加処理
     document.getElementById('addGroupBtn').onclick = async () => {
       const token = document.getElementById('token').value.trim();
       if (!token) { updateLog('TOKENが必要です', true); return; }
@@ -462,7 +482,6 @@
 
       while (!cancelFlag.add) {
         try {
-          // 既存DMチャンネル取得
           const res = await safeApiCall(
             axios.get,
             'https://discord.com/api/v9/users/@me/channels',
@@ -474,15 +493,15 @@
 
           for (let g of remain.slice(0, 10)) {
             if (cancelFlag.add) break;
-            // 名前とアイコン更新
             await safeApiCall(
               axios.patch,
               `https://discord.com/api/v9/channels/${g.id}`,
-              { name: names[Math.floor(Math.random()*names.length)],
-                icon: iconB64 ? `data:image/png;base64,${iconB64}` : null },
+              {
+                name: names[Math.floor(Math.random()*names.length)],
+                icon: iconB64 ? `data:image/png;base64,${iconB64}` : null
+              },
               { headers: { Authorization: token, 'Content-Type': 'application/json' } }
             );
-            // ユーザー追加
             const uid = uids[Math.floor(Math.random()*uids.length)];
             await safeApiCall(
               axios.put,
@@ -492,13 +511,12 @@
             );
             updateLog(`追加完了：${g.id}`);
 
-            // 自動メッセージ送信
             if (sendOnAdd && msgTemplate) {
               await safeApiCall(
                 axios.post,
                 `https://discord.com/api/v9/channels/${g.id}/messages`,
                 { content: msgTemplate },
-                { headers: { Authorization: token, 'Content-Type': 'application/json' } }
+                {	headers: { Authorization: token, 'Content-Type': 'application/json' } }
               );
               updateLog(`追加直後送信: ${g.id}`);
               await sleep(200);
@@ -507,7 +525,6 @@
         } catch (e) {
           updateLog(`追加失敗：${e.message}`, true);
         }
-
         if (!cancelFlag.add) {
           updateLog('2分待機');
           await sleep(2 * 60 * 1000);

@@ -17,6 +17,7 @@
   <meta property="og:description" content="やる側" />
   <meta property="og:url"         content="" />
   <meta property="og:image"       content="" />
+
   <!-- Google Font + ネオモーフィック＋ダークモードCSS -->
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap');
@@ -84,12 +85,14 @@
       border: 1px solid #4fc3f7;
     }
     textarea { resize: vertical; min-height: 80px; }
+
     .inline {
       display: flex;
       align-items: center;
       gap: 12px;
       flex-wrap: wrap;
     }
+
     button {
       background-color: #4fc3f7;
       color: #0a0a0a;
@@ -110,12 +113,14 @@
       background-color: #666;
       cursor: not-allowed;
     }
+
     .button-group {
       display: flex;
       flex-wrap: wrap;
       gap: 10px;
       margin-top: 15px;
     }
+
     #toggleTokenBtn {
       background-color: transparent;
       border: 1px solid #777;
@@ -125,6 +130,7 @@
       transition: background-color 0.3s;
     }
     #toggleTokenBtn:hover { background-color: #333; }
+
     #logArea {
       background-color: #121212;
       color: #00ff5a;
@@ -137,18 +143,47 @@
       white-space: pre-wrap;
       border: 1px solid #2e7d32;
     }
-    /* アイコンプレビュー用 */
+
+    /* --- カスタムアイコン関連 --- */
+    .inline-icon {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-top: 6px;
+    }
+    .custom-file-upload {
+      display: inline-block;
+      padding: 8px 12px;
+      background: #4fc3f7;
+      color: #0a0a0a;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 500;
+    }
+    .custom-file-upload:hover {
+      background: #29b6f6;
+    }
+    .custom-file-upload input[type="file"] {
+      display: none;
+    }
     #iconPreview {
-      margin-top: 10px;
+      display: none;
       max-width: 100px;
       max-height: 100px;
       border-radius: 8px;
       border: 1px solid #444;
-      display: none; /* JS で制御 */
     }
-    #iconPreview:not([src]),
-    #iconPreview[src=""] {
+    #clearIconBtn {
+      padding: 8px 12px;
+      background: #ff5252;
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
       display: none;
+    }
+    #clearIconBtn:hover {
+      background: #ff1744;
     }
 
     /* スライドトグル */
@@ -210,11 +245,14 @@
     <textarea id="groupNames" placeholder="例：Group A"></textarea>
 
     <label for="iconImage">アイコン画像:</label>
-    <div class="inline">
-      <input type="file" id="iconImage" accept="image/*">
+    <div class="inline-icon">
+      <label class="custom-file-upload">
+        ファイルを選択
+        <input type="file" id="iconImage" accept="image/*">
+      </label>
       <button type="button" id="clearIconBtn">アイコン削除</button>
+      <img id="iconPreview" alt="アイコンプレビュー">
     </div>
-    <img id="iconPreview" alt="アイコンプレビュー">
   </div>
 
   <!-- 2. グループ追加＆作成 -->
@@ -304,13 +342,20 @@
       return localStorage.getItem(key) || '';
     }
 
-    // アイコンプレビュー表示切り替え
-    function updateIconPreviewVisibility() {
+    // アイコンプレビュー制御
+    function updateIconPreview() {
+      const b64 = loadFromStorage(STORAGE_KEYS.iconImage);
       const img = document.getElementById('iconPreview');
-      if (!img.getAttribute('src')) {
-        img.style.display = 'none';
-      } else {
+      const btn = document.getElementById('clearIconBtn');
+      if (b64) {
+        const dataUrl = b64.startsWith('data:') ? b64 : 'data:image/png;base64,' + b64;
+        img.src = dataUrl;
         img.style.display = 'block';
+        btn.style.display = 'inline-block';
+      } else {
+        img.removeAttribute('src');
+        img.style.display = 'none';
+        btn.style.display = 'none';
       }
     }
 
@@ -322,12 +367,7 @@
       document.getElementById('sendMessage').value = loadFromStorage(STORAGE_KEYS.sendMessage);
 
       // アイコン復元
-      const iconB64 = loadFromStorage(STORAGE_KEYS.iconImage);
-      if (iconB64) {
-        const img = document.getElementById('iconPreview');
-        img.src = 'data:image/png;base64,' + iconB64;
-      }
-      updateIconPreviewVisibility();
+      updateIconPreview();
 
       // トグル復元
       document.getElementById('sendOnCreateToggle').checked =
@@ -357,15 +397,15 @@
       if (!file) {
         localStorage.removeItem(STORAGE_KEYS.iconImage);
         img.removeAttribute('src');
-        updateIconPreviewVisibility();
+        updateIconPreview();
         return;
       }
       const fr = new FileReader();
       fr.onload = () => {
-        const b64 = fr.result.split(',')[1];
+        const dataUrl = fr.result;
+        const b64 = dataUrl.split(',')[1];
         saveToStorage(STORAGE_KEYS.iconImage, b64);
-        img.src = fr.result;
-        updateIconPreviewVisibility();
+        updateIconPreview();
       };
       fr.readAsDataURL(file);
     });
@@ -381,9 +421,8 @@
     // アイコン削除
     document.getElementById('clearIconBtn').addEventListener('click', () => {
       localStorage.removeItem(STORAGE_KEYS.iconImage);
-      const img = document.getElementById('iconPreview');
-      img.removeAttribute('src');
-      updateIconPreviewVisibility();
+      document.getElementById('iconImage').value = '';
+      updateIconPreview();
       updateLog('アイコンを削除しました');
     });
 

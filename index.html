@@ -303,170 +303,174 @@
   <!-- axios -->
   <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
   <script>
-    // ユーティリティ
-    const sleep = ms => new Promise(r => setTimeout(r, ms));
-    let cancelFlag = { add: false, create: false };
-    function updateLog(msg, isError = false) {
-      const area = document.getElementById('logArea');
-      area.textContent += `[${new Date().toLocaleTimeString()}] ${msg}\n`;
-      area.scrollTop = area.scrollHeight;
+  // --- Utility ---
+  const cancelFlag = { add: false, create: false, send: false };
+  function updateLog(msg, isError = false) {
+    const area = document.getElementById('logArea');
+    area.textContent += `[${new Date().toLocaleTimeString()}] ${msg}\n`;
+    area.scrollTop = area.scrollHeight;
+  }
+
+  // キャンセル可能なsleep
+  async function sleep(ms, cancelCheck) {
+    const interval = 50;
+    let elapsed = 0;
+    while (elapsed < ms) {
+      if (cancelCheck && cancelCheck()) throw new Error('キャンセルされました');
+      await new Promise(r => setTimeout(r, Math.min(interval, ms - elapsed)));
+      elapsed += interval;
     }
+  }
 
-    // トークン表示切替
-    document.getElementById('toggleTokenBtn').addEventListener('click', function() {
-      const t = document.getElementById('token');
-      if (t.type === 'password') {
-        t.type = 'text';
-        this.textContent = '非表示';
-      } else {
-        t.type = 'password';
-        this.textContent = '表示';
-      }
-    });
-
-    // localStorage 保存／復元ユーティリティ
-    const STORAGE_KEYS = {
-      token: 'dmtool_token',
-      userIds: 'dmtool_userIds',
-      groupNames: 'dmtool_groupNames',
-      sendMessage: 'dmtool_sendMessage',
-      iconImage: 'dmtool_iconImage',
-      sendOnCreate: 'dmtool_sendOnCreate',
-      sendOnAdd:    'dmtool_sendOnAdd'
-    };
-    function saveToStorage(key, value) {
-      try { localStorage.setItem(key, value); }
-      catch (e) { console.warn('localStorage 保存失敗:', e); }
-    }
-    function loadFromStorage(key) {
-      return localStorage.getItem(key) || '';
-    }
-
-    // アイコンプレビュー制御
-    function updateIconPreview() {
-      const b64 = loadFromStorage(STORAGE_KEYS.iconImage);
-      const img = document.getElementById('iconPreview');
-      const btn = document.getElementById('clearIconBtn');
-      if (b64) {
-        const dataUrl = b64.startsWith('data:') ? b64 : 'data:image/png;base64,' + b64;
-        img.src = dataUrl;
-        img.style.display = 'block';
-        btn.style.display = 'inline-block';
-      } else {
-        img.removeAttribute('src');
-        img.style.display = 'none';
-        btn.style.display = 'none';
-      }
-    }
-
-    // ページ読み込み時に復元
-    window.addEventListener('DOMContentLoaded', () => {
-      document.getElementById('token').value       = loadFromStorage(STORAGE_KEYS.token);
-      document.getElementById('userIds').value     = loadFromStorage(STORAGE_KEYS.userIds);
-      document.getElementById('groupNames').value  = loadFromStorage(STORAGE_KEYS.groupNames);
-      document.getElementById('sendMessage').value = loadFromStorage(STORAGE_KEYS.sendMessage);
-
-      // アイコン復元
-      updateIconPreview();
-
-      // トグル復元
-      document.getElementById('sendOnCreateToggle').checked =
-        localStorage.getItem(STORAGE_KEYS.sendOnCreate) === 'true';
-      document.getElementById('sendOnAddToggle').checked =
-        localStorage.getItem(STORAGE_KEYS.sendOnAdd) === 'true';
-    });
-
-    // 入力変更で随時保存
-    document.getElementById('token').addEventListener('input', e =>
-      saveToStorage(STORAGE_KEYS.token, e.target.value.trim())
-    );
-    document.getElementById('userIds').addEventListener('input', e =>
-      saveToStorage(STORAGE_KEYS.userIds, e.target.value)
-    );
-    document.getElementById('groupNames').addEventListener('input', e =>
-      saveToStorage(STORAGE_KEYS.groupNames, e.target.value)
-    );
-    document.getElementById('sendMessage').addEventListener('input', e =>
-      saveToStorage(STORAGE_KEYS.sendMessage, e.target.value)
-    );
-
-    // アイコン変更で保存＆表示切り替え
-    document.getElementById('iconImage').addEventListener('change', e => {
-      const file = e.target.files[0];
-      const img = document.getElementById('iconPreview');
-      if (!file) {
-        localStorage.removeItem(STORAGE_KEYS.iconImage);
-        img.removeAttribute('src');
-        updateIconPreview();
-        return;
-      }
-      const fr = new FileReader();
-      fr.onload = () => {
-        const dataUrl = fr.result;
-        const b64 = dataUrl.split(',')[1];
-        saveToStorage(STORAGE_KEYS.iconImage, b64);
-        updateIconPreview();
-      };
-      fr.readAsDataURL(file);
-    });
-
-    // トグル変更で保存
-    document.getElementById('sendOnCreateToggle').addEventListener('change', e => {
-      localStorage.setItem(STORAGE_KEYS.sendOnCreate, e.target.checked);
-    });
-    document.getElementById('sendOnAddToggle').addEventListener('change', e => {
-      localStorage.setItem(STORAGE_KEYS.sendOnAdd, e.target.checked);
-    });
-
-    // アイコン削除
-    document.getElementById('clearIconBtn').addEventListener('click', () => {
-      localStorage.removeItem(STORAGE_KEYS.iconImage);
-      document.getElementById('iconImage').value = '';
-      updateIconPreview();
-      updateLog('アイコンを削除しました');
-    });
-
-    // 共通API呼び出し（レート制御付き）
-    async function safeApiCall(fn, ...args) {
-      while (true) {
-        try { return await fn(...args); }
-        catch (e) {
-          const s = e.response?.status;
-          if (s === 429) {
-            const wait = e.response.data.retry_after || 1;
-            updateLog(`レート制限：${wait}s 待機`, true);
-            await sleep(wait * 1000);
-          } else if ([500, 504].includes(s)) {
-            const w = s === 500 ? 30 : 10;
-            updateLog(`サーバー${s}エラー：${w}s 待機`, true);
-            await sleep(w * 1000);
-          } else {
-            throw e;
-          }
+  // 共通API呼び出し（レート制御・即時停止対応）
+  async function safeApiCall(fn, cancelCheck, ...args) {
+    while (true) {
+      if (cancelCheck && cancelCheck()) throw new Error('キャンセルされました');
+      try {
+        const result = await fn(...args);
+        if (cancelCheck && cancelCheck()) throw new Error('キャンセルされました');
+        return result;
+      } catch (e) {
+        if (cancelCheck && cancelCheck()) throw new Error('キャンセルされました');
+        const s = e.response?.status;
+        if (s === 429) {
+          const wait = e.response.data.retry_after || 1;
+          updateLog(`レート制限：${wait}s 待機`, true);
+          await sleep(wait * 1000, cancelCheck);
+        } else if ([500, 504].includes(s)) {
+          const w = s === 500 ? 30 : 10;
+          updateLog(`サーバー${s}エラー：${w}s 待機`, true);
+          await sleep(w * 1000, cancelCheck);
+        } else {
+          throw e;
         }
       }
     }
+  }
 
-    // グループ作成処理
-    document.getElementById('createGroupBtn').onclick = async () => {
-      const token = document.getElementById('token').value.trim();
-      if (!token) { updateLog('TOKENが必要です', true); return; }
-      const names = document.getElementById('groupNames').value
-        .split('\n').map(l=>l.trim()).filter(l=>l) || ['Default'];
-      const iconB64 = loadFromStorage(STORAGE_KEYS.iconImage);
-      const sendOnCreate = document.getElementById('sendOnCreateToggle').checked;
-      const msgTemplate = document.getElementById('sendMessage').value.trim();
+  // --- Storage Utility ---
+  const STORAGE_KEYS = {
+    token: 'dmtool_token',
+    userIds: 'dmtool_userIds',
+    groupNames: 'dmtool_groupNames',
+    sendMessage: 'dmtool_sendMessage',
+    iconImage: 'dmtool_iconImage',
+    sendOnCreate: 'dmtool_sendOnCreate',
+    sendOnAdd: 'dmtool_sendOnAdd'
+  };
+  function saveToStorage(key, value) {
+    try { localStorage.setItem(key, value); }
+    catch (e) { /* ignore */ }
+  }
+  function loadFromStorage(key) {
+    return localStorage.getItem(key) || '';
+  }
 
-      cancelFlag.create = false;
-      document.getElementById('createGroupBtn').disabled = true;
-      document.getElementById('stopCreateGroupBtn').disabled = false;
-      updateLog('グループ作成開始');
+  // --- Icon Preview ---
+  function updateIconPreview() {
+    const b64 = loadFromStorage(STORAGE_KEYS.iconImage);
+    const img = document.getElementById('iconPreview');
+    const btn = document.getElementById('clearIconBtn');
+    if (b64) {
+      img.src = b64.startsWith('data:') ? b64 : 'data:image/png;base64,' + b64;
+      img.style.display = 'block';
+      btn.style.display = 'inline-block';
+    } else {
+      img.removeAttribute('src');
+      img.style.display = 'none';
+      btn.style.display = 'none';
+    }
+  }
 
+  // --- Restore on Load ---
+  window.addEventListener('DOMContentLoaded', () => {
+    document.getElementById('token').value       = loadFromStorage(STORAGE_KEYS.token);
+    document.getElementById('userIds').value     = loadFromStorage(STORAGE_KEYS.userIds);
+    document.getElementById('groupNames').value  = loadFromStorage(STORAGE_KEYS.groupNames);
+    document.getElementById('sendMessage').value = loadFromStorage(STORAGE_KEYS.sendMessage);
+    updateIconPreview();
+    document.getElementById('sendOnCreateToggle').checked =
+      localStorage.getItem(STORAGE_KEYS.sendOnCreate) === 'true';
+    document.getElementById('sendOnAddToggle').checked =
+      localStorage.getItem(STORAGE_KEYS.sendOnAdd) === 'true';
+  });
+
+  // --- Input Save ---
+  document.getElementById('token').addEventListener('input', e =>
+    saveToStorage(STORAGE_KEYS.token, e.target.value.trim())
+  );
+  document.getElementById('userIds').addEventListener('input', e =>
+    saveToStorage(STORAGE_KEYS.userIds, e.target.value)
+  );
+  document.getElementById('groupNames').addEventListener('input', e =>
+    saveToStorage(STORAGE_KEYS.groupNames, e.target.value)
+  );
+  document.getElementById('sendMessage').addEventListener('input', e =>
+    saveToStorage(STORAGE_KEYS.sendMessage, e.target.value)
+  );
+
+  // --- Icon Upload ---
+  document.getElementById('iconImage').addEventListener('change', e => {
+    const file = e.target.files[0];
+    if (!file) {
+      localStorage.removeItem(STORAGE_KEYS.iconImage);
+      updateIconPreview();
+      return;
+    }
+    const fr = new FileReader();
+    fr.onload = () => {
+      const dataUrl = fr.result;
+      const b64 = dataUrl.split(',')[1];
+      saveToStorage(STORAGE_KEYS.iconImage, b64);
+      updateIconPreview();
+    };
+    fr.readAsDataURL(file);
+  });
+
+  // --- Toggle Save ---
+  document.getElementById('sendOnCreateToggle').addEventListener('change', e => {
+    localStorage.setItem(STORAGE_KEYS.sendOnCreate, e.target.checked);
+  });
+  document.getElementById('sendOnAddToggle').addEventListener('change', e => {
+    localStorage.setItem(STORAGE_KEYS.sendOnAdd, e.target.checked);
+  });
+
+  // --- Icon Clear ---
+  document.getElementById('clearIconBtn').addEventListener('click', () => {
+    localStorage.removeItem(STORAGE_KEYS.iconImage);
+    document.getElementById('iconImage').value = '';
+    updateIconPreview();
+    updateLog('アイコンを削除しました');
+  });
+
+  // --- Token Show/Hide ---
+  document.getElementById('toggleTokenBtn').addEventListener('click', function() {
+    const t = document.getElementById('token');
+    t.type = t.type === 'password' ? 'text' : 'password';
+    this.textContent = t.type === 'password' ? '表示' : '非表示';
+  });
+
+  // --- Group Create ---
+  document.getElementById('createGroupBtn').onclick = async () => {
+    const token = document.getElementById('token').value.trim();
+    if (!token) return updateLog('TOKENが必要です', true);
+    const names = document.getElementById('groupNames').value
+      .split('\n').map(l=>l.trim()).filter(l=>l) || ['Default'];
+    const iconB64 = loadFromStorage(STORAGE_KEYS.iconImage);
+    const sendOnCreate = document.getElementById('sendOnCreateToggle').checked;
+    const msgTemplate = document.getElementById('sendMessage').value.trim();
+
+    cancelFlag.create = false;
+    document.getElementById('createGroupBtn').disabled = true;
+    document.getElementById('stopCreateGroupBtn').disabled = false;
+    updateLog('グループ作成開始');
+
+    try {
       while (!cancelFlag.create) {
         for (let i = 0; i < 10 && !cancelFlag.create; i++) {
           try {
             const res = await safeApiCall(
-              axios.post,
+              axios.post, () => cancelFlag.create,
               'https://discord.com/api/v9/users/@me/channels',
               { recipients: [] },
               { headers: { Authorization: token, 'Content-Type': 'application/json' } }
@@ -475,7 +479,7 @@
             updateLog(`作成: チャネル ${cid}`);
 
             await safeApiCall(
-              axios.patch,
+              axios.patch, () => cancelFlag.create,
               `https://discord.com/api/v9/channels/${cid}`,
               {
                 name: names[Math.floor(Math.random()*names.length)],
@@ -487,55 +491,56 @@
 
             if (sendOnCreate && msgTemplate) {
               await safeApiCall(
-                axios.post,
+                axios.post, () => cancelFlag.create,
                 `https://discord.com/api/v9/channels/${cid}/messages`,
                 { content: msgTemplate },
                 { headers: { Authorization: token, 'Content-Type': 'application/json' } }
               );
               updateLog(`作成直後送信: ${cid}`);
-              await sleep(200);
+              await sleep(200, () => cancelFlag.create);
             }
           } catch (e) {
+            if (e.message === 'キャンセルされました') break;
             updateLog(`作成失敗：${e.message}`, true);
           }
-          await sleep(0);
+          await sleep(0, () => cancelFlag.create);
         }
         if (!cancelFlag.create) {
           updateLog('10件完了。10分待機');
-          await sleep(10 * 60 * 1000);
+          try { await sleep(10 * 60 * 1000, () => cancelFlag.create); } catch { break; }
         }
       }
-
+    } finally {
       updateLog('グループ作成停止');
       document.getElementById('createGroupBtn').disabled = false;
       document.getElementById('stopCreateGroupBtn').disabled = true;
-    };
-    document.getElementById('stopCreateGroupBtn').onclick = () => {
-      cancelFlag.create = true;
-    };
+    }
+  };
+  document.getElementById('stopCreateGroupBtn').onclick = () => { cancelFlag.create = true; };
 
-    // グループ追加処理
-    document.getElementById('addGroupBtn').onclick = async () => {
-      const token = document.getElementById('token').value.trim();
-      if (!token) { updateLog('TOKENが必要です', true); return; }
-      const uids = document.getElementById('userIds').value
-        .split('\n').map(l=>l.trim()).filter(l=>l);
-      if (!uids.length) { updateLog('ユーザーIDが必要です', true); return; }
-      const names = document.getElementById('groupNames').value
-        .split('\n').map(l=>l.trim()).filter(l=>l) || ['Default'];
-      const iconB64 = loadFromStorage(STORAGE_KEYS.iconImage);
-      const sendOnAdd = document.getElementById('sendOnAddToggle').checked;
-      const msgTemplate = document.getElementById('sendMessage').value.trim();
+  // --- Group Add ---
+  document.getElementById('addGroupBtn').onclick = async () => {
+    const token = document.getElementById('token').value.trim();
+    if (!token) return updateLog('TOKENが必要です', true);
+    const uids = document.getElementById('userIds').value
+      .split('\n').map(l=>l.trim()).filter(l=>l);
+    if (!uids.length) return updateLog('ユーザーIDが必要です', true);
+    const names = document.getElementById('groupNames').value
+      .split('\n').map(l=>l.trim()).filter(l=>l) || ['Default'];
+    const iconB64 = loadFromStorage(STORAGE_KEYS.iconImage);
+    const sendOnAdd = document.getElementById('sendOnAddToggle').checked;
+    const msgTemplate = document.getElementById('sendMessage').value.trim();
 
-      cancelFlag.add = false;
-      document.getElementById('addGroupBtn').disabled = true;
-      document.getElementById('stopAddGroupBtn').disabled = false;
-      updateLog('グループ追加開始');
+    cancelFlag.add = false;
+    document.getElementById('addGroupBtn').disabled = true;
+    document.getElementById('stopAddGroupBtn').disabled = false;
+    updateLog('グループ追加開始');
 
+    try {
       while (!cancelFlag.add) {
         try {
           const res = await safeApiCall(
-            axios.get,
+            axios.get, () => cancelFlag.add,
             'https://discord.com/api/v9/users/@me/channels',
             { headers: { Authorization: token } }
           );
@@ -544,9 +549,8 @@
           updateLog(`未参加グループ数：${remain.length}`);
 
           for (let g of remain.slice(0, 10)) {
-            if (cancelFlag.add) break;
             await safeApiCall(
-              axios.patch,
+              axios.patch, () => cancelFlag.add,
               `https://discord.com/api/v9/channels/${g.id}`,
               {
                 name: names[Math.floor(Math.random()*names.length)],
@@ -556,7 +560,7 @@
             );
             const uid = uids[Math.floor(Math.random()*uids.length)];
             await safeApiCall(
-              axios.put,
+              axios.put, () => cancelFlag.add,
               `https://discord.com/api/v9/channels/${g.id}/recipients/${uid}`,
               {},
               { headers: { Authorization: token } }
@@ -565,62 +569,68 @@
 
             if (sendOnAdd && msgTemplate) {
               await safeApiCall(
-                axios.post,
+                axios.post, () => cancelFlag.add,
                 `https://discord.com/api/v9/channels/${g.id}/messages`,
                 { content: msgTemplate },
-                {	headers: { Authorization: token, 'Content-Type': 'application/json' } }
+                { headers: { Authorization: token, 'Content-Type': 'application/json' } }
               );
               updateLog(`追加直後送信: ${g.id}`);
-              await sleep(200);
+              await sleep(200, () => cancelFlag.add);
             }
+            await sleep(0, () => cancelFlag.add);
+            if (cancelFlag.add) break;
           }
         } catch (e) {
+          if (e.message === 'キャンセルされました') break;
           updateLog(`追加失敗：${e.message}`, true);
         }
         if (!cancelFlag.add) {
           updateLog('2分待機');
-          await sleep(2 * 60 * 1000);
+          try { await sleep(2 * 60 * 1000, () => cancelFlag.add); } catch { break; }
         }
       }
-
+    } finally {
       updateLog('グループ追加停止');
       document.getElementById('addGroupBtn').disabled = false;
       document.getElementById('stopAddGroupBtn').disabled = true;
-    };
-    document.getElementById('stopAddGroupBtn').onclick = () => {
-      cancelFlag.add = true;
-    };
+    }
+  };
+  document.getElementById('stopAddGroupBtn').onclick = () => { cancelFlag.add = true; };
 
-    // メッセージ一括送信
-    document.getElementById('sendMessageBtn').onclick = async () => {
-      const token = document.getElementById('token').value.trim();
-      if (!token) { updateLog('TOKENが必要です', true); return; }
-      const msg = document.getElementById('sendMessage').value.trim();
-      if (!msg) { updateLog('メッセージを入力してください', true); return; }
+  // --- Bulk Message Send ---
+  document.getElementById('sendMessageBtn').onclick = async () => {
+    const token = document.getElementById('token').value.trim();
+    if (!token) return updateLog('TOKENが必要です', true);
+    const msg = document.getElementById('sendMessage').value.trim();
+    if (!msg) return updateLog('メッセージを入力してください', true);
 
-      updateLog('メッセージ送信開始');
-      try {
-        const res = await safeApiCall(
-          axios.get,
-          'https://discord.com/api/v9/users/@me/channels',
-          { headers: { Authorization: token } }
+    cancelFlag.send = false;
+    updateLog('メッセージ送信開始');
+    let stopped = false;
+    try {
+      const res = await safeApiCall(
+        axios.get, () => cancelFlag.send,
+        'https://discord.com/api/v9/users/@me/channels',
+        { headers: { Authorization: token } }
+      );
+      const dms = res.data.filter(c => c.type === 3);
+      for (let g of dms) {
+        await safeApiCall(
+          axios.post, () => cancelFlag.send,
+          `https://discord.com/api/v9/channels/${g.id}/messages`,
+          { content: msg },
+          { headers: { Authorization: token, 'Content-Type': 'application/json' } }
         );
-        const dms = res.data.filter(c => c.type === 3);
-        for (let g of dms) {
-          await safeApiCall(
-            axios.post,
-            `https://discord.com/api/v9/channels/${g.id}/messages`,
-            { content: msg },
-            { headers: { Authorization: token, 'Content-Type': 'application/json' } }
-          );
-          updateLog(`送信：${g.id}`);
-          await sleep(200);
-        }
-      } catch (e) {
-        updateLog(`送信中エラー：${e.message}`, true);
+        updateLog(`送信：${g.id}`);
+        await sleep(200, () => cancelFlag.send);
+        if (cancelFlag.send) { stopped = true; break; }
       }
-      updateLog('メッセージ送信完了');
-    };
+    } catch (e) {
+      if (e.message === 'キャンセルされました') stopped = true;
+      else updateLog(`送信中エラー：${e.message}`, true);
+    }
+    updateLog(stopped ? 'メッセージ送信停止' : 'メッセージ送信完了');
+  };
   </script>
 </body>
 </html>

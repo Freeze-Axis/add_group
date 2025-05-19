@@ -40,51 +40,58 @@
       text-align: center;
       text-shadow: 1px 1px 4px #000;
     }
+    /* --- UI/UX 改善 --- */
     .card {
-      background: rgba(255, 255, 255, 0.05);
-      backdrop-filter: blur(10px);
-      border-radius: 16px;
-      padding: 25px;
-      margin-bottom: 25px;
+      background: rgba(255,255,255,0.08);
+      border-radius: 18px;
+      padding: 28px 24px 24px 24px;
+      margin-bottom: 28px;
       width: 100%;
       max-width: 900px;
-      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
-      border: 1px solid rgba(255, 255, 255, 0.08);
-      transition: transform 0.3s ease, box-shadow 0.3s ease;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.35);
+      border: 1.5px solid rgba(255,255,255,0.10);
+      transition: transform 0.25s, box-shadow 0.25s;
+      position: relative;
     }
     .card:hover {
-      transform: translateY(-3px);
-      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+      transform: translateY(-2px) scale(1.01);
+      box-shadow: 0 12px 32px rgba(0,0,0,0.45);
     }
     .card h2 {
-      color: #81d4fa;
+      color: #4fc3f7;
       margin-top: 0;
+      margin-bottom: 18px;
+      font-size: 1.5em;
+      letter-spacing: 0.03em;
     }
     label {
       display: block;
-      margin-top: 15px;
+      margin-top: 18px;
       font-weight: 500;
-      color: #ddd;
+      color: #b3e5fc;
+      font-size: 1.08em;
+      letter-spacing: 0.01em;
     }
     input[type="text"],
     input[type="password"],
     textarea {
       width: 100%;
-      padding: 12px 14px;
-      margin-top: 6px;
-      border-radius: 8px;
-      border: 1px solid #444;
-      background-color: #2a2a3a;
+      padding: 13px 15px;
+      margin-top: 7px;
+      border-radius: 9px;
+      border: 1.5px solid #333a;
+      background-color: #23233a;
       color: #fff;
-      font-size: 1em;
-      transition: border 0.3s;
+      font-size: 1.08em;
+      transition: border 0.3s, box-shadow 0.3s;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
     }
-    input:focus,
-    textarea:focus {
+    input:focus, textarea:focus {
       outline: none;
-      border: 1px solid #4fc3f7;
+      border: 1.5px solid #4fc3f7;
+      box-shadow: 0 0 0 2px #4fc3f755;
     }
-    textarea { resize: vertical; min-height: 80px; }
+    textarea { resize: vertical; min-height: 90px; }
 
     .inline {
       display: flex;
@@ -93,55 +100,72 @@
       flex-wrap: wrap;
     }
 
-    button {
-      background-color: #4fc3f7;
-      color: #0a0a0a;
-      border: none;
-      padding: 12px 18px;
-      border-radius: 8px;
-      font-size: 1em;
-      font-weight: bold;
-      cursor: pointer;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.3);
-      transition: background 0.3s, transform 0.2s;
-    }
-    button:hover {
-      background-color: #29b6f6;
-      transform: scale(1.03);
-    }
-    button:disabled {
-      background-color: #666;
-      cursor: not-allowed;
-    }
-
     .button-group {
       display: flex;
       flex-wrap: wrap;
-      gap: 10px;
-      margin-top: 15px;
+      gap: 12px;
+      margin-top: 18px;
+    }
+    button {
+      background: linear-gradient(90deg, #4fc3f7 60%, #29b6f6 100%);
+      color: #0a0a0a;
+      border: none;
+      padding: 13px 22px;
+      border-radius: 9px;
+      font-size: 1.08em;
+      font-weight: bold;
+      cursor: pointer;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.22);
+      transition: background 0.25s, transform 0.18s;
+      letter-spacing: 0.01em;
+    }
+    button:hover {
+      background: linear-gradient(90deg, #29b6f6 60%, #4fc3f7 100%);
+      transform: scale(1.04);
+    }
+    button:disabled {
+      background: #444a;
+      color: #aaa;
+      cursor: not-allowed;
+      box-shadow: none;
     }
 
     #toggleTokenBtn {
-      background-color: transparent;
-      border: 1px solid #777;
-      color: #bbb;
-      padding: 10px 12px;
-      border-radius: 6px;
-      transition: background-color 0.3s;
+      background: #23233a;
+      color: #b3e5fc;
+      border: 1.5px solid #4fc3f7;
+      padding: 10px 14px;
+      border-radius: 7px;
+      font-size: 1em;
+      margin-left: 8px;
+      transition: background 0.2s, color 0.2s;
     }
-    #toggleTokenBtn:hover { background-color: #333; }
+    #toggleTokenBtn:hover {
+      background: #4fc3f7;
+      color: #23233a;
+    }
 
     #logArea {
-      background-color: #121212;
+      background: #181828;
       color: #00ff5a;
-      padding: 18px;
-      border-radius: 8px;
-      font-family: monospace;
-      font-size: 0.9em;
-      height: 250px;
+      padding: 20px 18px;
+      border-radius: 10px;
+      font-family: 'Roboto Mono', monospace;
+      font-size: 1em;
+      height: 260px;
       overflow-y: auto;
       white-space: pre-wrap;
-      border: 1px solid #2e7d32;
+      border: 1.5px solid #4fc3f7;
+      margin-top: 10px;
+      transition: border 0.3s;
+    }
+    #logArea::-webkit-scrollbar {
+      width: 8px;
+      background: #23233a;
+    }
+    #logArea::-webkit-scrollbar-thumb {
+      background: #4fc3f7;
+      border-radius: 4px;
     }
 
     /* --- カスタムアイコン関連 --- */
@@ -153,38 +177,37 @@
     }
     .custom-file-upload {
       display: inline-block;
-      padding: 8px 12px;
+      padding: 8px 14px;
       background: #4fc3f7;
       color: #0a0a0a;
-      border-radius: 6px;
+      border-radius: 7px;
       cursor: pointer;
       font-weight: 500;
+      margin-right: 8px;
+      transition: background 0.2s;
     }
-    .custom-file-upload:hover {
-      background: #29b6f6;
-    }
-    .custom-file-upload input[type="file"] {
-      display: none;
-    }
+    .custom-file-upload:hover { background: #29b6f6; }
+    .custom-file-upload input[type="file"] { display: none; }
     #iconPreview {
       display: none;
-      max-width: 100px;
-      max-height: 100px;
+      max-width: 90px;
+      max-height: 90px;
       border-radius: 8px;
-      border: 1px solid #444;
+      border: 1.5px solid #4fc3f7;
+      margin-left: 8px;
     }
     #clearIconBtn {
-      padding: 8px 12px;
+      padding: 8px 14px;
       background: #ff5252;
       color: #fff;
       border: none;
-      border-radius: 6px;
+      border-radius: 7px;
       cursor: pointer;
       display: none;
+      margin-left: 8px;
+      transition: background 0.2s;
     }
-    #clearIconBtn:hover {
-      background: #ff1744;
-    }
+    #clearIconBtn:hover { background: #ff1744; }
 
     /* スライドトグル */
     .switch {
@@ -221,7 +244,18 @@
     .toggle-label {
       margin-left: 10px;
       font-weight: 500;
-      color: #ddd;
+      color: #b3e5fc;
+    }
+    /* レスポンシブ */
+    @media (max-width: 700px) {
+      .card { padding: 16px 6px; }
+      .logArea { font-size: 0.95em; }
+      h1 { font-size: 2em; }
+    }
+    @media (max-width: 500px) {
+      .card { padding: 8px 2px; }
+      h1 { font-size: 1.3em; }
+      .button-group { flex-direction: column; gap: 8px; }
     }
   </style>
 </head>
@@ -289,8 +323,11 @@
     <h2>メッセージ送信</h2>
     <label for="sendMessage">送信メッセージ:</label>
     <textarea id="sendMessage" placeholder="全DMグループに送るメッセージを入力"></textarea>
-    <div class="button-group">
+    <div class="inline" style="margin-top:10px;align-items:center;gap:18px;">
+      <label for="sendInterval" style="margin:0;">送信間隔(ms):</label>
+      <input type="number" id="sendInterval" min="0" max="10000" step="100" value="200" style="width:100px;">
       <button type="button" id="sendMessageBtn">メッセージ一括送信</button>
+      <button type="button" id="stopSendMessageBtn" disabled>送信停止</button>
     </div>
   </div>
 
@@ -488,6 +525,7 @@
               { headers: { Authorization: token, 'Content-Type': 'application/json' } }
             );
             updateLog(`設定完了: ${cid}`);
+            await sleep(0, () => cancelFlag.create); // ← 0ms遅延（アイコン・名前変更）
 
             if (sendOnCreate && msgTemplate) {
               await safeApiCall(
@@ -497,7 +535,7 @@
                 { headers: { Authorization: token, 'Content-Type': 'application/json' } }
               );
               updateLog(`作成直後送信: ${cid}`);
-              await sleep(200, () => cancelFlag.create);
+              await sleep(0, () => cancelFlag.create);
             }
           } catch (e) {
             if (e.message === 'キャンセルされました') break;
@@ -522,7 +560,7 @@
   document.getElementById('addGroupBtn').onclick = async () => {
     const token = document.getElementById('token').value.trim();
     if (!token) return updateLog('TOKENが必要です', true);
-    const uids = document.getElementById('userIds').value
+    let uids = document.getElementById('userIds').value
       .split('\n').map(l=>l.trim()).filter(l=>l);
     if (!uids.length) return updateLog('ユーザーIDが必要です', true);
     const names = document.getElementById('groupNames').value
@@ -558,13 +596,34 @@
               },
               { headers: { Authorization: token, 'Content-Type': 'application/json' } }
             );
+            await sleep(0, () => cancelFlag.add);
+
             const uid = uids[Math.floor(Math.random()*uids.length)];
-            await safeApiCall(
-              axios.put, () => cancelFlag.add,
-              `https://discord.com/api/v9/channels/${g.id}/recipients/${uid}`,
-              {},
-              { headers: { Authorization: token } }
-            );
+            try {
+              await safeApiCall(
+                axios.put, () => cancelFlag.add,
+                `https://discord.com/api/v9/channels/${g.id}/recipients/${uid}`,
+                {},
+                { headers: { Authorization: token } }
+              );
+            } catch (e) {
+              // 404/10013: 不明なユーザー または 403/50007: DM不可
+              if (
+                (e.response && e.response.status === 404 && e.response.data?.code === 10013) ||
+                (e.response && e.response.status === 403 && e.response.data?.code === 50007)
+              ) {
+                let reason = e.response.data?.code === 10013 ? '不明なユーザー' : 'DM不可ユーザー';
+                updateLog(`ID ${uid} は${reason}のためID一覧から除外し、追加処理を停止します`, true);
+                // ID一覧から除外
+                uids = uids.filter(id => id !== uid);
+                document.getElementById('userIds').value = uids.join('\n');
+                saveToStorage(STORAGE_KEYS.userIds, uids.join('\n'));
+                cancelFlag.add = true;
+                break;
+              } else {
+                throw e;
+              }
+            }
             updateLog(`追加完了：${g.id}`);
 
             if (sendOnAdd && msgTemplate) {
@@ -575,7 +634,7 @@
                 { headers: { Authorization: token, 'Content-Type': 'application/json' } }
               );
               updateLog(`追加直後送信: ${g.id}`);
-              await sleep(200, () => cancelFlag.add);
+              await sleep(0, () => cancelFlag.add);
             }
             await sleep(0, () => cancelFlag.add);
             if (cancelFlag.add) break;
@@ -603,8 +662,11 @@
     if (!token) return updateLog('TOKENが必要です', true);
     const msg = document.getElementById('sendMessage').value.trim();
     if (!msg) return updateLog('メッセージを入力してください', true);
+    const interval = parseInt(document.getElementById('sendInterval').value, 10) || 200;
 
     cancelFlag.send = false;
+    document.getElementById('sendMessageBtn').disabled = true;
+    document.getElementById('stopSendMessageBtn').disabled = false;
     updateLog('メッセージ送信開始');
     let stopped = false;
     try {
@@ -622,7 +684,7 @@
           { headers: { Authorization: token, 'Content-Type': 'application/json' } }
         );
         updateLog(`送信：${g.id}`);
-        await sleep(200, () => cancelFlag.send);
+        await sleep(interval, () => cancelFlag.send);
         if (cancelFlag.send) { stopped = true; break; }
       }
     } catch (e) {
@@ -630,7 +692,66 @@
       else updateLog(`送信中エラー：${e.message}`, true);
     }
     updateLog(stopped ? 'メッセージ送信停止' : 'メッセージ送信完了');
+    document.getElementById('sendMessageBtn').disabled = false;
+    document.getElementById('stopSendMessageBtn').disabled = true;
   };
+  document.getElementById('stopSendMessageBtn').onclick = () => { cancelFlag.send = true; };
+
+  // --- UI/UX 改善 ---
+  // ログエリアのクリアボタン
+  if (!document.getElementById('clearLogBtn2')) {
+    const clearBtn = document.createElement('button');
+    clearBtn.id = 'clearLogBtn2';
+    clearBtn.textContent = 'ログクリア';
+    clearBtn.style.margin = '10px 0 0 0';
+    clearBtn.style.background = '#23233a';
+    clearBtn.style.color = '#4fc3f7';
+    clearBtn.style.border = '1.5px solid #4fc3f7';
+    clearBtn.style.borderRadius = '7px';
+    clearBtn.style.padding = '8px 18px';
+    clearBtn.style.fontSize = '1em';
+    clearBtn.style.cursor = 'pointer';
+    clearBtn.onclick = () => {
+      document.getElementById('logArea').textContent = '';
+    };
+    document.getElementById('logArea').parentNode.insertBefore(clearBtn, document.getElementById('logArea'));
+  }
+  // ログエリアクリックで全選択
+  document.getElementById('logArea').addEventListener('click', function() {
+    const range = document.createRange();
+    range.selectNodeContents(this);
+    const sel = window.getSelection();
+    sel.removeAllRanges();
+    sel.addRange(range);
+  });
+  // フォーカス時に自動全選択
+  document.getElementById('logArea').addEventListener('focus', function() {
+    const range = document.createRange();
+    range.selectNodeContents(this);
+    const sel = window.getSelection();
+    sel.removeAllRanges();
+    sel.addRange(range);
+  });
+  // 入力欄のEnterで次の欄に自動フォーカス
+  Array.from(document.querySelectorAll('input,textarea')).forEach((el, idx, arr) => {
+    el.addEventListener('keydown', e => {
+      if (e.key === 'Enter' && !e.shiftKey && el.tagName !== 'TEXTAREA') {
+        e.preventDefault();
+        if (arr[idx+1]) arr[idx+1].focus();
+      }
+    });
+  });
+  // ボタンにローディング表示
+  function setLoading(btn, loading) {
+    if (loading) {
+      btn.dataset.oldText = btn.textContent;
+      btn.textContent = '処理中...';
+      btn.disabled = true;
+    } else {
+      if (btn.dataset.oldText) btn.textContent = btn.dataset.oldText;
+      btn.disabled = false;
+    }
+  }
   </script>
 </body>
 </html>

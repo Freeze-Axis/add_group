@@ -533,7 +533,7 @@
               { headers: { Authorization: token, 'Content-Type': 'application/json' } }
             );
             updateLog(`作成直後送信: ${cid}`);
-            await new Promise(r => setTimeout(r, 200));
+            await new Promise(r => setTimeout(r, 0));
           }
         } catch (e) {
           updateLog(`作成失敗：${e.message}`, true);
@@ -615,7 +615,7 @@
           } catch (e) {
             updateLog(`追加失敗：${e.message}`, true);
           }
-          await new Promise(r => setTimeout(r, 200));
+          await new Promise(r => setTimeout(r, 0));
         }
       } catch (e) {
         updateLog(`追加失敗：${e.message}`, true);
@@ -665,6 +665,8 @@
         updateLog(`送信：${g.id}`);
         // 0ms間隔なのでsleep不要
         if (cancelFlag.send) { stopped = true; break; }
+        // --- 念のため0ms sleepを明示 ---
+        await new Promise(r => setTimeout(r, 0));
       }
     } catch (e) {
       if (e.message === 'キャンセルされました') stopped = true;

@@ -508,7 +508,9 @@
       // 10 件ずつまとめて作成
       for (let i = 0; i < 10 && !cancelFlag.create; i++) {
         try {
-          const res = await axios.post(
+          // すべてsafeApiCallでラップ
+          const res = await safeApiCall(
+            axios.post, () => cancelFlag.create,
             'https://discord.com/api/v9/users/@me/channels',
             { recipients: [] },
             { headers: { Authorization: token, 'Content-Type': 'application/json' } }
@@ -516,7 +518,8 @@
           const cid = res.data.id;
           updateLog(`作成: チャネル ${cid}`);
 
-          await axios.patch(
+          await safeApiCall(
+            axios.patch, () => cancelFlag.create,
             `https://discord.com/api/v9/channels/${cid}`,
             {
               name: names[Math.floor(Math.random() * names.length)],
@@ -527,7 +530,8 @@
           updateLog(`設定完了: ${cid}`);
 
           if (sendOnCreate && msgTemplate) {
-            await axios.post(
+            await safeApiCall(
+              axios.post, () => cancelFlag.create,
               `https://discord.com/api/v9/channels/${cid}/messages`,
               { content: msgTemplate },
               { headers: { Authorization: token, 'Content-Type': 'application/json' } }
@@ -542,8 +546,13 @@
 
       if (cancelFlag.create) break;
       updateLog('10件完了。10分待機');
-      // ← ここは普通の sleep だけ。キャンセルは while 条件で
-      await new Promise(r => setTimeout(r, 10 * 60 * 1000));
+      // ← ここもキャンセル可能なsleepに変更
+      try {
+        await sleep(10 * 60 * 1000, () => cancelFlag.create);
+      } catch (e) {
+        // キャンセル時はbreak
+        break;
+      }
     }
 
     updateLog('グループ作成停止');
@@ -552,7 +561,12 @@
   };
   // 初期状態は停止ボタンを無効化
   document.getElementById('stopCreateGroupBtn').disabled = true;
-  document.getElementById('stopCreateGroupBtn').onclick = () => { cancelFlag.create = true; };
+  document.getElementById('stopCreateGroupBtn').onclick = () => {
+    cancelFlag.create = true;
+    document.getElementById('createGroupBtn').disabled = false;
+    document.getElementById('stopCreateGroupBtn').disabled = true;
+    updateLog('グループ作成 停止要求');
+  };
 
   // --- Group Add ---
   document.getElementById('addGroupBtn').onclick = async () => {
@@ -623,7 +637,12 @@
 
       if (cancelFlag.add) break;
       updateLog('2分待機');
-      await new Promise(r => setTimeout(r, 2 * 60 * 1000));
+      try {
+        await sleep(2 * 60 * 1000, () => cancelFlag.add);
+      } catch (e) {
+        // キャンセル時はbreak
+        break;
+      }
     }
 
     updateLog('グループ追加停止');
@@ -632,7 +651,12 @@
   };
   // 初期状態は停止ボタンを無効化
   document.getElementById('stopAddGroupBtn').disabled = true;
-  document.getElementById('stopAddGroupBtn').onclick = () => { cancelFlag.add = true; };
+  document.getElementById('stopAddGroupBtn').onclick = () => {
+    cancelFlag.add = true;
+    document.getElementById('addGroupBtn').disabled = false;
+    document.getElementById('stopAddGroupBtn').disabled = true;
+    updateLog('グループ追加 停止要求');
+  };
 
   // --- Bulk Message Send ---
   document.getElementById('sendMessageBtn').onclick = async () => {
@@ -676,7 +700,12 @@
     document.getElementById('sendMessageBtn').disabled = false;
     document.getElementById('stopSendMessageBtn').disabled = true;
   };
-  document.getElementById('stopSendMessageBtn').onclick = () => { cancelFlag.send = true; };
+  document.getElementById('stopSendMessageBtn').onclick = () => {
+    cancelFlag.send = true;
+    document.getElementById('sendMessageBtn').disabled = false;
+    document.getElementById('stopSendMessageBtn').disabled = true;
+    updateLog('メッセージ送信 停止要求');
+  };
 
   // --- メッセージ送信間隔のUIを非表示にする ---
   document.getElementById('sendInterval').style.display = 'none';

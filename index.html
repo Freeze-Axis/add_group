@@ -647,18 +647,7 @@
             const name = pick(names);
             const uid = pick(userIds);
 
-            await safeApiCallCustom(
-              axios.patch,
-              [
-                `https://discord.com/api/v9/channels/${cid}`,
-                iconB64 ? { name, icon: `data:image/png;base64,${iconB64}` } : { name },
-                { headers: { Authorization: getToken(), 'Content-Type': 'application/json' } }
-              ],
-              'cancelFlagAdd',
-              updateRateLimitAddition
-            );
-            updateLog(`追加完了：${cid}`);
-
+            // ① ユーザー追加
             await safeApiCallCustom(
               axios.put,
               [
@@ -670,8 +659,23 @@
               updateRateLimitAddition
             );
             updateLog(`ユーザー追加：${cid}`);
+
+            // ② グループ名・アイコン変更
+            await safeApiCallCustom(
+              axios.patch,
+              [
+                `https://discord.com/api/v9/channels/${cid}`,
+                iconB64 ? { name, icon: `data:image/png;base64,${iconB64}` } : { name },
+                { headers: { Authorization: getToken(), 'Content-Type': 'application/json' } }
+              ],
+              'cancelFlagAdd',
+              updateRateLimitAddition
+            );
+            updateLog(`設定完了：${cid}`);
+
             await sleep(0);
-            // 追加時メッセージ送信
+
+            // ③ 追加時メッセージ送信
             if (sendOnAdd && msgTemplate) {
               await safeApiCallCustom(
                 axios.post,
@@ -685,8 +689,8 @@
               );
               updateLog(`追加時送信：${cid}`);
             }
-
           }
+          
           if (!runningAdd) break;
           updateLog('2分待機');
           await sleep(2 * 60 * 1000);

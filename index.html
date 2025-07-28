@@ -19,326 +19,254 @@
   <meta property="og:url"         content="" />
   <meta property="og:image"       content="" />
 <!----------------------------------------------------------------->
-
-  <!-- Google Font + ネオモーフィック＋ダークモードCSS -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap');
-
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: #202225; border-radius: 3px; }
+    ::-webkit-scrollbar-thumb { background: #5865f2; border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: #7289da; }
+    *, *::before, *::after { box-sizing: border-box; }
     body {
-      margin: 0;
-      padding: 30px 20px;
-      background: linear-gradient(145deg, #1e1e2f, #2c2c3d);
-      font-family: 'Roboto', sans-serif;
-      color: #f0f0f0;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      min-height: 100vh;
-    }
-    h1 {
-      font-size: 2.8em;
-      margin-bottom: 30px;
-      color: #4fc3f7;
-      text-align: center;
-      text-shadow: 1px 1px 4px #000;
+      font-family: 'Inter', sans-serif;
+      background: linear-gradient(135deg,#2f3136,#1e1f22);
+      color:#fff;
+      margin:0; padding:0;
+      display:flex; justify-content:center; align-items:center;
+      height:100vh;
+      user-select: none;
+      -webkit-user-select: none;
+      -ms-user-select: none;
+      -moz-user-select: none;
     }
     .card {
-      background: rgba(255,255,255,0.08);
-      border-radius: 18px;
-      padding: 28px 24px 24px 24px;
-      margin-bottom: 28px;
-      width: 100%;
-      max-width: 900px;
-      box-shadow: 0 8px 24px rgba(0,0,0,0.35);
-      border: 1.5px solid rgba(255,255,255,0.10);
-      transition: transform 0.25s, box-shadow 0.25s;
-      position: relative;
+      background:#36393f;
+      padding:32px;
+      border-radius:20px;
+      box-shadow:0 15px 35px rgba(0,0,0,.5);
+      width:100%; max-width:600px;
+      animation:fadeIn .8s ease;
+      overflow:auto; max-height:95vh;
     }
-    .card:hover {
-      transform: translateY(-2px) scale(1.01);
-      box-shadow: 0 12px 32px rgba(0,0,0,0.45);
+    @keyframes fadeIn {
+      from { opacity:0; transform:translateY(20px); }
+      to   { opacity:1; transform:translateY(0); }
     }
-    .card h2 {
-      color: #4fc3f7;
-      margin-top: 0;
-      margin-bottom: 18px;
-      font-size: 1.5em;
-      letter-spacing: 0.03em;
+    h2 { color:#adb8ff; text-align:center; margin:0 0 24px; font-weight:600; }
+    label { display:block; margin-top:18px; font-size:14px; }
+    input[type="text"], input[type="password"], textarea {
+      width:100%; padding:10px; margin-top:6px;
+      border-radius:8px; border:none;
+      background:#202225; color:#fff;
+      font-family:monospace; resize:vertical;
     }
-    label {
-      display: block;
-      margin-top: 18px;
-      font-weight: 500;
-      color: #b3e5fc;
-      font-size: 1.08em;
-      letter-spacing: 0.01em;
+    textarea { overflow-y:auto; }
+    input[type="number"] {
+      padding:6px; margin-top:6px;
+      border-radius:8px; border:none;
+      background:#202225; color:#fff;
+      font-family:monospace; appearance:none;
+      width:80px;
     }
-    input[type="text"],
-    input[type="password"],
-    textarea {
-      width: 100%;
-      padding: 13px 15px;
-      margin-top: 7px;
-      border-radius: 9px;
-      border: 1.5px solid #333a;
-      background-color: #23233a;
-      color: #fff;
-      font-size: 1.08em;
-      transition: border 0.3s, box-shadow 0.3s;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    input[type=number]::-webkit-inner-spin-button,
+    input[type=number]::-webkit-outer-spin-button {
+      -webkit-appearance:none; margin:0;
     }
-    input:focus, textarea:focus {
-      outline: none;
-      border: 1.5px solid #4fc3f7;
-      box-shadow: 0 0 0 2px #4fc3f755;
+    .row {
+      display:flex; gap:12px; align-items:center;
     }
-    textarea { resize: vertical; min-height: 90px; }
-
-    .inline {
+    .row > * { flex:none; }
+    .row label,
+    .row .checkbox-container { margin-top:0; }
+    .checkbox-container {
+      display:flex; align-items:center; gap:8px;
+      cursor:pointer; font-size:14px; user-select:none;
+      margin-top:6px;
+    }
+    .checkbox-container input {
+      appearance:none; width:36px; height:18px;
+      background:#4f545c; border-radius:18px;
+      position:relative; transition:background .3s ease;
+    }
+    .checkbox-container:hover input { background:#5a5f68; }
+    .checkbox-container input:focus {
+      outline:none; box-shadow:0 0 0 3px rgba(114,137,218,0.5);
+    }
+    .checkbox-container input::before {
+      content:''; position:absolute;
+      width:14px; height:14px; border-radius:50%;
+      background:#fff; top:2px; left:2px;
+      transition:transform .3s cubic-bezier(.68,-.55,.27,1.55);
+    }
+    .checkbox-container input:checked { background:#7289da; }
+    .checkbox-container input:checked::before {
+      transform:translateX(18px);
+    }
+    .checkbox-container span { transition:color .3s; }
+    .checkbox-container input:checked + span {
+      color:#adb8ff;
+    }
+    button.primary, button.secondary {
+      margin-top:12px; width:auto; min-width:140px; padding:7px 14px;
+      border:none; border-radius:10px;
+      font-weight:600; font-size:14px;
+      letter-spacing:.2px; cursor:pointer; position:relative;
+      overflow:hidden; transition:all .2s;
+    }
+    button.primary {
+      background:linear-gradient(135deg,#6d75ff,#5865f2);
+      color:#fff;
+      box-shadow:0 2px 8px rgba(88,101,242,.25),0 0 4px rgba(255,255,255,.08),inset 0 0 2px rgba(255,255,255,.12);
+    }
+    button.secondary {
+      background:linear-gradient(135deg,#e74c3c,#c0392b);
+      color:#fff;
+      box-shadow:0 2px 8px rgba(236,81,81,.25),0 0 4px rgba(255,255,255,.08),inset 0 0 2px rgba(255,255,255,.12);
+    }
+    button.disabled-btn {
+      background: #ccc !important;
+      color: #fff !important;
+      box-shadow: none !important;
+      cursor: not-allowed !important;
+    }
+    .button-container {
       display: flex;
-      align-items: center;
-      gap: 12px;
-      flex-wrap: wrap;
+      gap: 8px;
+      justify-content: center;
     }
-
-    .button-group {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 12px;
-      margin-top: 18px;
-    }
-    button {
-      background: linear-gradient(90deg, #4fc3f7 60%, #29b6f6 100%);
-      color: #0a0a0a;
-      border: none;
-      padding: 13px 22px;
-      border-radius: 9px;
-      font-size: 1.08em;
-      font-weight: bold;
-      cursor: pointer;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.22);
-      transition: background 0.25s, transform 0.18s;
-      letter-spacing: 0.01em;
-    }
-    button:hover {
-      background: linear-gradient(90deg, #29b6f6 60%, #4fc3f7 100%);
-      transform: scale(1.04);
-    }
-    button:disabled {
-      background: #444a;
-      color: #aaa;
-      cursor: not-allowed;
-      box-shadow: none;
-    }
-
-    #toggleTokenBtn {
-      background: #23233a;
-      color: #b3e5fc;
-      border: 1.5px solid #4fc3f7;
-      padding: 10px 14px;
-      border-radius: 7px;
-      font-size: 1em;
-      margin-left: 8px;
-      transition: background 0.2s, color 0.2s;
-    }
-    #toggleTokenBtn:hover {
-      background: #4fc3f7;
-      color: #23233a;
-    }
-
-    #logArea {
-      background: #181828;
-      color: #00ff5a;
-      padding: 20px 18px;
-      border-radius: 10px;
-      font-family: 'Roboto Mono', monospace;
-      font-size: 1em;
-      height: 260px;
-      overflow-y: auto;
-      white-space: pre-wrap;
-      border: 1.5px solid #4fc3f7;
-      margin-top: 10px;
-      transition: border 0.3s;
-    }
-    #logArea::-webkit-scrollbar {
-      width: 8px;
-      background: #23233a;
-    }
-    #logArea::-webkit-scrollbar-thumb {
-      background: #4fc3f7;
-      border-radius: 4px;
-    }
-
-    /* --- カスタムアイコン関連 --- */
-    .inline-icon {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      margin-top: 6px;
-    }
-    .custom-file-upload {
-      display: inline-block;
-      padding: 8px 14px;
-      background: #4fc3f7;
-      color: #0a0a0a;
-      border-radius: 7px;
-      cursor: pointer;
-      font-weight: 500;
-      transition: background 0.2s;
-    }
-    .custom-file-upload:hover { background: #29b6f6; }
-    .custom-file-upload input[type="file"] { display: none; }
-    #iconPreview {
-      display: none;
-      max-width: 90px;
-      max-height: 90px;
-      border-radius: 8px;
-      border: 1.5px solid #4fc3f7;
-      margin-left: 8px;
-    }
-    #clearIconBtn {
-      padding: 8px 14px;
-      background: #ff5252;
-      color: #fff;
-      border: none;
-      border-radius: 7px;
-      cursor: pointer;
-      display: none;
-      margin-left: 8px;
-      transition: background 0.2s;
-    }
-    #clearIconBtn:hover { background: #ff1744; }
-
-    /* スライドトグル */
-    .switch {
-      position: relative;
-      display: inline-block;
-      width: 50px;
-      height: 24px;
-      vertical-align: middle;
-    }
-    .switch input { display: none; }
-    .slider {
-      position: absolute;
-      cursor: pointer;
-      top: 0; left: 0; right: 0; bottom: 0;
-      background-color: #444;
-      transition: .3s;
-      border-radius: 12px;
-    }
-    .slider:before {
-      position: absolute;
-      content: "";
-      height: 18px; width: 18px;
-      left: 3px; bottom: 3px;
-      background-color: #ccc;
-      transition: .3s;
-      border-radius: 50%;
-    }
-    input:checked + .slider {
-      background-color: #4fc3f7;
-    }
-    input:checked + .slider:before {
-      transform: translateX(26px);
-    }
-    .toggle-label {
-      margin-left: 10px;
-      font-weight: 500;
-      color: #b3e5fc;
-    }
-    /* レスポンシブ */
-    @media (max-width: 700px) {
-      .card { padding: 16px 6px; }
-      .logArea { font-size: 0.95em; }
-      h1 { font-size: 2em; }
-    }
-    @media (max-width: 500px) {
-      .card { padding: 8px 2px; }
-      h1 { font-size: 1.3em; }
-      .button-group { flex-direction: column; gap: 8px; }
+  .file-input-wrapper {
+    position: relative;
+    margin-top: 6px;
+  }
+  .file-label {
+    display: inline-block;
+    padding: 10px 16px;
+    background-color: #6d75ff;
+    color: #fff;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    transition: background 0.2s ease;
+  }
+  .file-label:hover {
+    background-color: #5865f2;
+  }
+  .file-name {
+    display: inline-block;
+    margin-left: 12px;
+    font-size: 13px;
+    color: #aaa;
+  }
+  input[type="file"] {
+    display: none;
+  }
+    #logArea { margin-top:20px; padding:10px; height:120px; overflow-y:auto; background:#202225; border-radius:10px; font-family:monospace; font-size:12px; white-space:pre-wrap; resize: vertical;}
+    @media (max-width: 600px) {
+      .card {
+        padding: 16px;
+        max-width: 95%;
+        border-radius: 10px;
+      }
+      h2 {
+        font-size: 18px;
+        margin-bottom: 16px;
+      }
+      label {
+        font-size: 13px;
+        margin-top: 12px;
+      }
+      input[type="text"],
+      input[type="password"],
+      textarea {
+        padding: 8px;
+        font-size: 12px;
+      }
+      textarea {
+        height: auto;
+        min-height: 60px;
+      }
+      button.primary,
+      button.secondary {
+        padding: 10px;
+        font-size: 16px;
+        width: 100%;
+        margin-top: 12px;
+      }
+      .button-container {
+        flex-direction: column;
+        gap: 8px;
+      }
+      .checkbox-container {
+        font-size: 13px;
+        flex-direction: row;
+      }
+      .file-label {
+        padding: 8px 12px;
+        font-size: 13px;
+      }
+      .file-name {
+        font-size: 12px;
+      }
+      #logArea {
+        height: 80px;
+        font-size: 11px;
+      }
     }
   </style>
 </head>
 <body>
-  <h1>DMグループ荒らしツール</h1>
-
-  <!-- 1. 基本設定 -->
-  <div class="card" id="basicSettings">
-    <h2>基本設定</h2>
-
-    <label for="token">TOKEN:</label>
-    <div class="inline">
-      <input type="password" id="token" placeholder="TOKENを入力">
-      <button type="button" id="toggleTokenBtn">表示</button>
+  <div class="card">
+    <h2>Freeze☭DMグループスパム</h2>
+    <label for="token">TOKEN</label>
+    <div style="position:relative;">
+      <input type="password" id="token" placeholder="TOKENを入力" style="width:100%;padding-right:36px;">
+      <button type="button" id="toggleTokenBtn" aria-label="マスク切替" style="position:absolute; right:8px; top:50%; transform:translateY(-50%); background:none; border:none; padding:0; margin:0; cursor:pointer; width:24px; height:24px; display:flex; align-items:center; justify-content:center; opacity:0.7;">
+        <span id="tokenMaskIcon">
+          <svg id="icon-eye" xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#ccc" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7-10-7-10-7z"/></svg>
+        </span>
+      </button>
     </div>
-
-    <label for="userIds">ユーザーID（改行区切り）:</label>
+    <label for="userIds">ユーザーID（改行区切り）</label>
     <textarea id="userIds" placeholder="例：123456789012345678"></textarea>
-
-    <label for="groupNames">グループ名（改行区切り）:</label>
+    <label for="groupNames">グループ名（改行区切り）</label>
     <textarea id="groupNames" placeholder="例：Group A"></textarea>
-
-    <label for="iconImage">グループアイコン画像:</label>
-    <div class="inline-icon">
-      <label class="custom-file-upload">
+    <label for="iconImage">グループアイコン画像</label>
+    <div class="file-input-wrapper row">
+      <label class="file-label">
         ファイルを選択
         <input type="file" id="iconImage" accept="image/*">
       </label>
-      <button type="button" id="clearIconBtn">アイコン削除</button>
-      <img id="iconPreview" alt="アイコンプレビュー">
+      <span class="file-name" id="iconFileName"></span>
+      <div id="iconPreviewBox" style="display:flex;align-items:center;gap:8px;">
+        <img id="iconPreview" alt="アイコンプレビュー" style="display:none;max-width:60px;max-height:60px;border-radius:8px;">
+        <button type="button" id="clearIconBtn" style="display:none;background:#e74c3c;color:#fff;border:none;border-radius:6px;padding:6px 12px;font-size:13px;cursor:pointer;">アイコン削除</button>
+      </div>
     </div>
-  </div>
-
-  <!-- 2. グループ追加＆作成 -->
-  <div class="card" id="groupOps">
-    <h2>グループ追加＆作成</h2>
-
-    <div class="button-group">
-      <button type="button" id="createGroupBtn">グループ作成開始</button>
-      <button type="button" id="stopCreateGroupBtn" disabled>作成停止</button>
+    <div class="row" style="margin-top:18px;">
+      <button type="button" class="primary" id="createGroupBtn">作成開始</button>
+      <button type="button" class="secondary" id="stopCreateGroupBtn" disabled>停止</button>
     </div>
-    <div class="inline" style="margin-top:8px">
-      <label class="switch">
-        <input type="checkbox" id="sendOnCreateToggle">
-        <span class="slider"></span>
-      </label>
-      <span class="toggle-label">グループ作成時にメッセージ送信</span>
+    <div class="checkbox-container">
+      <input type="checkbox" id="sendOnCreateToggle">
+      <span>グループ作成時にメッセージ送信</span>
     </div>
-
-    <div class="button-group" style="margin-top:15px">
-      <button type="button" id="addGroupBtn">グループ追加開始</button>
-      <button type="button" id="stopAddGroupBtn" disabled>追加停止</button>
+    <div class="row" style="margin-top:18px;">
+      <button type="button" class="primary" id="addGroupBtn">グループ追加開始</button>
+      <button type="button" class="secondary" id="stopAddGroupBtn" disabled>追加停止</button>
     </div>
-    <div class="inline" style="margin-top:8px">
-      <label class="switch">
-        <input type="checkbox" id="sendOnAddToggle">
-        <span class="slider"></span>
-      </label>
-      <span class="toggle-label">グループ追加時にメッセージ送信</span>
+    <div class="checkbox-container">
+      <input type="checkbox" id="sendOnAddToggle">
+      <span>グループ追加時にメッセージ送信</span>
     </div>
-  </div>
-
-  <!-- 3. メッセージ送信 -->
-  <div class="card" id="messageSend">
-    <h2>メッセージ送信</h2>
-    <label for="sendMessage">送信メッセージ:</label>
+    <label for="sendMessage" style="margin-top:18px;">送信メッセージ</label>
     <textarea id="sendMessage" placeholder="全DMグループに送るメッセージを入力"></textarea>
-    <div class="inline" style="margin-top:10px;align-items:center;gap:18px;">
-      <button type="button" id="sendMessageBtn">メッセージ一括送信</button>
-      <button type="button" id="stopSendMessageBtn" disabled>送信停止</button>
+    <!-- メッセージ一括送信ボタンと停止ボタン削除 -->
+    <div id="rateLimitBox" style="margin-top:10px;">
+      <div id="rateLimitCreation"></div>
+      <div id="rateLimitAddition"></div>
     </div>
+    <div id="logArea" style="margin-top:20px;">ログがここに表示されます</div>
   </div>
-
-  <!-- 処理ログ -->
-  <div class="card">
-    <h2>処理ログ</h2>
-    <div id="logArea">ログがここに表示されます</div>
-  </div>
-  <div id="rateLimitBox">
-    <div id="rateLimitCreation"></div>
-    <div id="rateLimitAddition"></div>
-  </div>
-
   <!-- axios -->
   <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
   <script>
@@ -392,14 +320,17 @@
       const b64 = loadFromStorage(STORAGE_KEYS.iconImage);
       const img = document.getElementById('iconPreview');
       const btn = document.getElementById('clearIconBtn');
+      const box = document.getElementById('iconPreviewBox');
       if (b64) {
         img.src = b64.startsWith('data:') ? b64 : 'data:image/png;base64,' + b64;
         img.style.display = 'block';
         btn.style.display = 'inline-block';
+        box.style.display = 'flex';
       } else {
         img.removeAttribute('src');
         img.style.display = 'none';
         btn.style.display = 'none';
+        box.style.display = 'none';
       }
     }
 
@@ -462,11 +393,17 @@
       localStorage.setItem(STORAGE_KEYS.sendOnAdd, e.target.checked)
     );
 
-    // --- Token Show/Hide ---
+    // --- Token Show/Hide (SVGアイコン切替) ---
     document.getElementById('toggleTokenBtn').addEventListener('click', function() {
       const t = document.getElementById('token');
-      t.type = t.type === 'password' ? 'text' : 'password';
-      this.textContent = t.type === 'password' ? '表示' : '非表示';
+      const icon = document.getElementById('tokenMaskIcon');
+      if (t.type === 'password') {
+        t.type = 'text';
+        icon.innerHTML = '<svg id="icon-eye-off" xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#ccc" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.06 10.06 0 0 1 12 20c-6 0-10-8-10-8a18.4 18.4 0 0 1 5.06-5.94"/><path d="M1 1l22 22"/><path d="M9.53 9.53A3 3 0 0 0 12 15a3 3 0 0 0 2.47-5.47"/><path d="M12 4c6 0 10 8 10 8a18.4 18.4 0 0 1-5.06 5.94"/></svg>';
+      } else {
+        t.type = 'password';
+        icon.innerHTML = '<svg id="icon-eye" xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#ccc" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7-10-7-10-7z"/></svg>';
+      }
     });
 
     // --- Rate Limit Display ---
@@ -538,7 +475,7 @@
           const status = e.response?.status;
           if (status === 429) {
             const wait = (e.response.data.retry_after || 1) * 1000;
-            updateLog(`レート制限(${url}): ${wait/1000}s 待機`, true);
+            updateLog(`レートリミット: ${wait/1000}秒待機`);
             updateRLFn(Math.ceil(wait/1000));
             await abortableSleep(wait, signal);
             updateRLFn(0);
@@ -630,10 +567,30 @@
           updateLog(`作成エラー：${e.message}`, true);
         }
       } finally {
-        document.getElementById('createGroupBtn').disabled = false;
-        document.getElementById('stopCreateGroupBtn').disabled = true;
+        setCreateBtnState(false);
         clearRateLimitCreation();
         updateLog('グループ作成停止');
+      }
+    }
+
+    // 初期状態で停止ボタンを必ず無効化
+    setCreateBtnState(false);
+    setAddBtnState(false);
+
+    // ボタン状態切り替え関数
+    function setCreateBtnState(isRunning) {
+      const execBtn = document.getElementById('createGroupBtn');
+      const stopBtn = document.getElementById('stopCreateGroupBtn');
+      if (isRunning) {
+        execBtn.disabled = true;
+        execBtn.classList.add('disabled-btn');
+        stopBtn.disabled = false;
+        stopBtn.classList.remove('disabled-btn');
+      } else {
+        execBtn.disabled = false;
+        execBtn.classList.remove('disabled-btn');
+        stopBtn.disabled = true;
+        stopBtn.classList.add('disabled-btn');
       }
     }
 
@@ -645,8 +602,7 @@
       createController = new AbortController();
       clearRateLimitCreation();
       document.getElementById('logArea').textContent = '';
-      document.getElementById('createGroupBtn').disabled = true;
-      document.getElementById('stopCreateGroupBtn').disabled = false;
+      setCreateBtnState(true);
 
       createLoop(names, iconB64, createController.signal);
     });
@@ -736,10 +692,30 @@
           updateLog(`追加エラー：${e.message}`, true);
         }
       } finally {
-        document.getElementById('addGroupBtn').disabled = false;
-        document.getElementById('stopAddGroupBtn').disabled = true;
+        setAddBtnState(false);
         clearRateLimitAddition();
         updateLog('グループ追加停止');
+      }
+    }
+
+    // 初期状態で追加停止ボタンを無効化
+    document.getElementById('stopAddGroupBtn').disabled = true;
+    document.getElementById('addGroupBtn').disabled = false;
+
+    // ボタン状態切り替え関数
+    function setAddBtnState(isRunning) {
+      const execBtn = document.getElementById('addGroupBtn');
+      const stopBtn = document.getElementById('stopAddGroupBtn');
+      if (isRunning) {
+        execBtn.disabled = true;
+        execBtn.classList.add('disabled-btn');
+        stopBtn.disabled = false;
+        stopBtn.classList.remove('disabled-btn');
+      } else {
+        execBtn.disabled = false;
+        execBtn.classList.remove('disabled-btn');
+        stopBtn.disabled = true;
+        stopBtn.classList.add('disabled-btn');
       }
     }
 
@@ -748,64 +724,12 @@
       addController = new AbortController();
       clearRateLimitAddition();
       document.getElementById('logArea').textContent = '';
-      document.getElementById('addGroupBtn').disabled = true;
-      document.getElementById('stopAddGroupBtn').disabled = false;
+      setAddBtnState(true);
 
       addLoop(addController.signal);
     });
     document.getElementById('stopAddGroupBtn').addEventListener('click', () => {
       if (addController) addController.abort();
-    });
-
-
-    // --- メッセージ送信 ---
-    document.getElementById('sendMessageBtn').addEventListener('click', async () => {
-      const msg = document.getElementById('sendMessage').value.trim();
-      if (!getToken() || !msg) { updateLog('TOKENとメッセージが必要です', true); return; }
-
-      sendController = new AbortController();
-      const signal = sendController.signal;
-      updateLog('メッセージ送信開始');
-      document.getElementById('sendMessageBtn').disabled = true;
-      document.getElementById('stopSendMessageBtn').disabled = false;
-
-      try {
-        const res = await safeRequest(
-          axios.get,
-          'https://discord.com/api/v9/users/@me/channels',
-          null,
-          { headers: { Authorization: getToken() }, signal },
-          signal,
-          updateRateLimitCreation
-        );
-        const dms = res.data.filter(c => c.type === 3);
-        for (let g of dms) {
-          if (signal.aborted) throw new Error('abort');
-          await safeRequest(
-            axios.post,
-            `https://discord.com/api/v9/channels/${g.id}/messages`,
-            { content: msg },
-            { headers: { Authorization: getToken(), 'Content-Type': 'application/json' }, signal },
-            signal,
-            updateRateLimitCreation
-          );
-          updateLog(`送信：${g.id}`);
-          await abortableSleep(0, signal);
-        }
-      } catch (e) {
-        if (e.name === 'CanceledError' || e.message === 'abort') {
-          updateLog('メッセージ送信が中断されました');
-        } else {
-          updateLog(`送信エラー：${e.message}`, true);
-        }
-      } finally {
-        document.getElementById('sendMessageBtn').disabled = false;
-        document.getElementById('stopSendMessageBtn').disabled = true;
-        updateLog('メッセージ送信完了／停止');
-      }
-    });
-    document.getElementById('stopSendMessageBtn').addEventListener('click', () => {
-      if (sendController) sendController.abort();
     });
   </script>
 </body>

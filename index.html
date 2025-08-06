@@ -45,7 +45,9 @@
       box-shadow:0 15px 35px rgba(0,0,0,.5);
       width:100%; max-width:600px;
       animation:fadeIn .8s ease;
-      overflow:auto; max-height:95vh;
+      overflow-y:auto; /* 横スクロールバーを消すためoverflow-xはhidden */
+      overflow-x:hidden;
+      max-height:95vh;
     }
     @keyframes fadeIn {
       from { opacity:0; transform:translateY(20px); }
@@ -237,9 +239,10 @@
         <input type="file" id="iconImage" accept="image/*">
       </label>
       <span class="file-name" id="iconFileName"></span>
-      <div id="iconPreviewBox" style="display:flex;align-items:center;gap:8px;">
-        <img id="iconPreview" alt="アイコンプレビュー" style="display:none;max-width:60px;max-height:60px;border-radius:8px;">
-        <button type="button" id="clearIconBtn" style="display:none;background:#e74c3c;color:#fff;border:none;border-radius:6px;padding:6px 12px;font-size:13px;cursor:pointer;">アイコン削除</button>
+      <div id="iconPreviewBox" style="display:flex;align-items:center;gap:8px;min-height:60px;width:100%;">
+        <img id="iconPreview" alt="アイコンプレビュー" style="display:none;max-width:60px;max-height:60px;border-radius:8px;flex-shrink:0;">
+        <button type="button" id="clearIconBtn" style="display:none;background:#e74c3c;color:#fff;border:none;border-radius:6px;padding:6px 12px;font-size:13px;cursor:pointer;flex-shrink:0;">アイコン削除</button>
+        <span id="iconPreviewSpacer" style="flex:1 1 auto;"></span>
       </div>
     </div>
     <div class="row" style="margin-top:18px;">
@@ -265,9 +268,128 @@
       <div id="rateLimitCreation"></div>
       <div id="rateLimitAddition"></div>
     </div>
+    <!-- フレンド招待URL生成エリア（見出しを上に独立配置、余白調整） -->
+    <label class="invite-title" for="inviteUrlInput">フレンド追加URL生成</label>
+    <div class="invite-url-flat">
+      <button type="button" class="invite-btn-flat" id="createInviteBtn">作成</button>
+      <button type="button" class="invite-btn-flat" id="copyInviteBtn">コピー</button>
+      <input type="text" id="inviteUrlInput" placeholder="https://discord.gg/..." class="invite-input-flat" readonly tabindex="-1">
+    </div>
     <div id="logArea" style="margin-top:20px;">ログがここに表示されます</div>
   </div>
   <!-- axios -->
+  <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      document.getElementById('createInviteBtn').addEventListener('click', async () => {
+        const token = getToken();
+        if (!token) {
+          alert('TOKENが必要です');
+          return;
+        }
+        document.getElementById('inviteUrlInput').value = '';
+        try {
+          const res = await axios.post(
+            'https://discord.com/api/v9/users/@me/invites',
+            { max_uses: 0, max_age: 0, temporary: false, unique: true },
+            { headers: { Authorization: token, 'Content-Type': 'application/json' } }
+          );
+          if (res.data && res.data.code) {
+            const url = `https://discord.gg/${res.data.code}`;
+            document.getElementById('inviteUrlInput').value = url;
+          } else {
+            alert('URL生成失敗');
+          }
+        } catch (e) {
+          alert('作成エラー: ' + (e.response?.data?.message || e.message));
+        }
+      });
+
+      document.getElementById('copyInviteBtn').addEventListener('click', () => {
+        const url = document.getElementById('inviteUrlInput').value;
+        if (!url) return;
+        navigator.clipboard.writeText(url);
+      });
+    });
+  </script>
+  <style>
+    .invite-title {
+      color: #adb8ff;
+      font-size: 14px;
+      font-weight: 600;
+      margin-top: 10px;
+      margin-bottom: 2px;
+      display: block;
+      letter-spacing: 0.1em;
+      user-select: none;
+      pointer-events: none;
+    }
+    .invite-url-flat {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin: 0 0 2px 0;
+      padding: 0;
+      max-width: 420px;
+      width: 100%;
+      min-width: 0;
+    }
+    .invite-btn-flat {
+      background: #5865f2;
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      padding: 5px 12px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+      outline: none;
+      min-width: 44px;
+    }
+    .invite-btn-flat:hover {
+      background: #6d75ff;
+    }
+    .invite-input-flat {
+      flex: 1;
+      min-width: 120px;
+      padding: 6px 8px;
+      border-radius: 6px;
+      border: 1px solid #444;
+      background: #23272a;
+      color: #fff;
+      font-size: 14px;
+      font-family: monospace;
+      outline: none;
+      transition: border 0.2s;
+      margin-left: 0;
+      user-select: none;
+      pointer-events: none;
+      cursor: default;
+    }
+    .invite-input-flat:focus {
+      border: 1px solid #6d75ff;
+    }
+    @media (max-width: 600px) {
+      .invite-title {
+        margin-top: 8px;
+        font-size: 13px;
+      }
+      .invite-url-flat {
+        flex-direction: column;
+        gap: 2px;
+        max-width: 98vw;
+        align-items: stretch;
+      }
+      .invite-input-flat, .invite-btn-flat {
+        width: 100%;
+        min-width: 0;
+        font-size: 12px;
+        margin-left: 0;
+        padding: 6px 8px;
+      }
+    }
+  </style>
   <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
   <script>
     // --- Utility ---
@@ -286,7 +408,12 @@
 
     function updateLog(msg, isError=false) {
       const area = document.getElementById('logArea');
-      area.textContent += `[${new Date().toLocaleTimeString()}] ${msg}\n`;
+      // 時:分のみ表示（秒は表示しない）
+      const now = new Date();
+      const h = now.getHours();
+      const m = now.getMinutes();
+      const time = `${h}:${m.toString().padStart(2, '0')}`;
+      area.textContent += `【${time}】 ${msg}\n`;
       area.scrollTop = area.scrollHeight;
     }
     function getToken() {
@@ -321,17 +448,22 @@
       const img = document.getElementById('iconPreview');
       const btn = document.getElementById('clearIconBtn');
       const box = document.getElementById('iconPreviewBox');
+      const spacer = document.getElementById('iconPreviewSpacer');
       if (b64) {
         img.src = b64.startsWith('data:') ? b64 : 'data:image/png;base64,' + b64;
         img.style.display = 'block';
         btn.style.display = 'inline-block';
         box.style.display = 'flex';
+        spacer.style.display = 'block';
       } else {
         img.removeAttribute('src');
         img.style.display = 'none';
         btn.style.display = 'none';
-        box.style.display = 'none';
+        box.style.display = 'flex'; // 常にflex
+        spacer.style.display = 'block';
       }
+      // ファイル選択欄の値もリセット
+      document.getElementById('iconImage').value = '';
     }
 
     // --- Restore on Load ---
@@ -365,8 +497,8 @@
     document.getElementById('iconImage').addEventListener('change', e => {
       const file = e.target.files[0];
       if (!file) {
-        localStorage.removeItem(STORAGE_KEYS.iconImage);
-        updateIconPreview();
+        // 何も選択せずキャンセルした場合は何もしない（プレビューもストレージも変更しない）
+        updateIconPreview(); // ただしinput[type=file]の値はリセット
         return;
       }
       const fr = new FileReader();
